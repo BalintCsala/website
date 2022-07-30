@@ -1,12 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import styles from "./App.module.css";
-import { Box } from "./Box/Box";
-import { Center } from "./Center/Center";
-import { Color } from "./color";
+import { Box } from "../common/Box/Box";
+import { Center } from "../common/Center/Center";
+import { Color } from "../color";
 import { NavBar } from "./NavBar/NavBar";
 import { About } from "./Pages/About/About";
 import { Home } from "./Pages/Home/Home";
+import { Resourcepack } from "./Pages/Resourcepack/Resourcepack";
 
 const NAVBAR_DATA = [
     {
@@ -21,7 +22,7 @@ const NAVBAR_DATA = [
     },
     {
         title: "Source",
-        path: "https://github.com/BalintCsala/website",
+        path: "https://github.com/BalintCsala/balintcsala.com",
         shortcut: "s",
     },
     {
@@ -59,6 +60,7 @@ export function App() {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/about" element={<About />} />
+                    <Route path="/vpt" element={<Resourcepack />} />
                 </Routes>
                 <Box width={80} height={3} background={Color.Teal} padded>
                     <span>F1 = Help, Alt + &lt;key&gt; = Shortcut</span>

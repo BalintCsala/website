@@ -1,0 +1,56 @@
+.container {
+    display: inline;
+    position: relative;
+}
+
+.selected {
+    display: inline-block;
+    width: 15ch;
+    background: var(--teal);
+    position: relative;
+    cursor: pointer;
+}
+
+.selected::after {
+    content: "▼";
+    width: 1ch;
+    height: 1ch;
+    display: inline-block;
+    background: var(--silver);
+    color: var(--black);
+    position: absolute;
+    border: none;
+    text-align: center;
+    box-sizing: border-box;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    text-shadow: none;
+}
+
+.dropdown {
+    display: none;
+    list-style: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 15ch;
+    background-color: var(--teal);
+    box-shadow: 1ch 1ch var(--black);
+    padding: 0;
+    padding-top: 1ch;
+}
+
+.dropdown.active {
+    display: block;
+}
+
+.dropdown li {
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.dropdown li:hover {
+    background: var(--aqua);
+}

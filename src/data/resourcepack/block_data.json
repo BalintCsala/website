@@ -1,0 +1,32 @@
+[
+    {
+        "name": "stone",
+        "model": "cube",
+        "textures": {
+            "texture": "stone"
+        }
+    },
+    {
+        "name": "cobblestone",
+        "model": "cube",
+        "textures": {
+            "texture": "cobblestone"
+        }
+    },
+    {
+        "name": "grass_block",
+        "model": "same_sides",
+        "textures": {
+            "top": "grass_block_top",
+            "bottom": "dirt",
+            "side": "grass_block_side"
+        }
+    },
+    {
+        "name": "dirt",
+        "model": "cube",
+        "textures": {
+            "texture": "dirt"
+        }
+    }
+]

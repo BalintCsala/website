@@ -1,0 +1,15 @@
+.button {
+    height: 3ch;
+    padding: 1ch;
+    margin: 0;
+    border: 0;
+    font-family: "BIOS";
+    font-size: 1em;
+    background: var(--teal);
+    color: var(--white);
+    cursor: pointer;
+}
+
+.button:active {
+    background: var(--aqua);
+}

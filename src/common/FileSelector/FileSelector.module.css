@@ -1,0 +1,12 @@
+.input {
+    display: none;
+}
+
+.display {
+    background: var(--teal);
+    display: inline-block;
+    width: 30ch;
+    height: 1ch;
+    cursor: pointer;
+    overflow: hidden;
+}

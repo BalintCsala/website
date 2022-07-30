@@ -1,0 +1,38 @@
+.button {
+    margin: 0 1ch;
+    background: var(--purple);
+    cursor: pointer;
+    user-select: none;
+    padding-left: 1ch;
+    padding-right: 1ch;
+}
+
+.button:hover {
+    background: var(--fuchsia);
+}
+
+.button.active {
+    background: var(--gray);
+    cursor: default;
+}
+
+.functionality {
+    display: block;
+    width: calc(100% + 2ch);
+    position: relative;
+    left: -1ch;
+    height: 2ch;
+    background: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: var(--white);
+    font-family: "BIOS";
+    font-size: inherit;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.button.active .functionality {
+    cursor: default;
+}
