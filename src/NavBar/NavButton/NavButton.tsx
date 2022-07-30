@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Box } from "../../Box/Box";
+import { Box } from "../../common/Box/Box";
 import styles from "./NavButton.module.css";
 
 interface Props {

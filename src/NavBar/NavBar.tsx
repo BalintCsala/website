@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Box } from "../Box/Box";
-import { Color } from "../color";
+import { Box } from "../common/Box/Box";
+import { Color } from "../data/color";
 import { NavButton } from "./NavButton/NavButton";
 
 interface Props {

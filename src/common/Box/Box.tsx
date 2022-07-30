@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-import { Color } from "../../color";
+import { Color } from "../../data/color";
 import styles from "./Box.module.css";
 
 interface Props {

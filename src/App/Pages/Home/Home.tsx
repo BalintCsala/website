@@ -1,5 +1,5 @@
 import { Box } from "../../../common/Box/Box";
-import { Color } from "../../../color";
+import { Color } from "../../../data/color";
 import { Photo } from "./Photo/Photo";
 
 export function Home() {
@@ -19,16 +19,18 @@ export function Home() {
             <br />
             <br />
             <Box width={38}>
-                Hi!<br />
-                <br />
-                Welcome to my webpage on the World Wide Web™!<br />
-                <br />
-                My name is Bálint Csala, I'm a freelancer frontend web developer. I've been in this industry as a hobby for 10 years and have been working professionally for 6.<br />
-                <br />
-                I'm also deep into computer graphics (OpenGL, Vulkan, shader stuff, etc.)<br />
-                <br />
-                If you'd like to contact me, please<br />
-                read the About me page.
+                <span>
+                    Hi!<br />
+                    <br />
+                    Welcome to my webpage on the World Wide Web™!<br />
+                    <br />
+                    My name is Bálint Csala, I'm a freelancer frontend web developer. I've been in this industry as a hobby for 10 years and have been working professionally for 6.<br />
+                    <br />
+                    I'm also deep into computer graphics (OpenGL, Vulkan, shader stuff, etc.)<br />
+                    <br />
+                    If you'd like to contact me, please<br />
+                    read the About me page.
+                </span>
             </Box>
             <Photo />
         </Box>

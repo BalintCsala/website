@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import styles from "./App.module.css";
 import { Box } from "../common/Box/Box";
 import { Center } from "../common/Center/Center";
-import { Color } from "../color";
+import { Color } from "../data/color";
 import { NavBar } from "./NavBar/NavBar";
 import { About } from "./Pages/About/About";
 import { Home } from "./Pages/Home/Home";
@@ -22,7 +22,7 @@ const NAVBAR_DATA = [
     },
     {
         title: "Source",
-        path: "https://github.com/BalintCsala/balintcsala.com",
+        path: "https://github.com/BalintCsala/balintcsala.github.io",
         shortcut: "s",
     },
     {

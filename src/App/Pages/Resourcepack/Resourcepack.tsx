@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Color } from "../../../color";
+import { Color } from "../../../data/color";
 import { Box } from "../../../common/Box/Box";
 import { Button } from "../../../common/Button/Button";
 import { FileSelector } from "../../../common/FileSelector/FileSelector";
 import { Selector } from "../../../common/Selector/Selector";
 import { generateResourcepack } from "../../../data/resourcepack/generator";
-import { proxyfetch } from "../../../proxyfetch";
+import { proxyfetch } from "../../../data/proxyfetch";
 
 interface Version {
     id: string,
@@ -104,12 +104,14 @@ export function Resourcepack() {
                 <span>4.) Generate the resourcepack</span><br />
                 <br />
                 <Button onClick={() => {
-                        if (selectedJar)
-                            generateResourcepack(selectedJar, selectedJar);
+                        if (selectedJar && selectedFile)
+                            generateResourcepack(selectedJar, selectedFile);
                     }} title="Generate pack" /><br />
                 <br />
                 <br />
-                <span>5.) Load the downloaded resourcepack ON TOP of VanillaPuddingTart</span>
+                <span>5.) Load the downloaded resourcepack ON TOP of VanillaPuddingTart</span><br />
+                <br />
+                <span>Don't share the generated file with anyone unless you have permission</span>
         </Box>
     )
 }

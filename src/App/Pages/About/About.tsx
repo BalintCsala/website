@@ -1,9 +1,9 @@
 import { Box } from "../../../common/Box/Box";
-import { Color } from "../../../color";
+import { Color } from "../../../data/color";
 
 export function About() {
     return (
-        <Box width={80} height={50} background={Color.Gray} text={Color.White} borderColor={Color.Black} border padded scrollable>
+        <Box width={80} height={50} background={Color.Gray} text={Color.White} borderColor={Color.Black} border padded>
             <Box width={15} />
             <Box width={46}>
                 <pre>
