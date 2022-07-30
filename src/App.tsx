@@ -21,7 +21,7 @@ const NAVBAR_DATA = [
     },
     {
         title: "Source",
-        path: "https://github.com/BalintCsala/website",
+        path: "https://github.com/BalintCsala/balintcsala.github.io",
         shortcut: "s",
     },
     {
