@@ -28,5 +28,103 @@
         "textures": {
             "texture": "dirt"
         }
+    },
+    {
+        "name": "sand",
+        "model": "cube",
+        "textures": {
+            "texture": "sand"
+        }
+    },
+    {
+        "name": "red_sand",
+        "model": "cube",
+        "textures": {
+            "texture": "red_sand"
+        }
+    },
+    {
+        "name": "netherrack",
+        "model": "cube",
+        "textures": {
+            "texture": "netherrack"
+        }
+    },
+    {
+        "name": "coal_ore",
+        "model": "cube",
+        "textures": {
+            "texture": "coal_ore"
+        }
+    },
+    {
+        "name": "iron_ore",
+        "model": "cube",
+        "textures": {
+            "texture": "iron_ore"
+        }
+    },
+    {
+        "name": "gold_ore",
+        "model": "cube",
+        "textures": {
+            "texture": "gold_ore"
+        }
+    },
+    {
+        "name": "redstone_lamp",
+        "model": "cube",
+        "textures": {
+            "texture": "redstone_lamp"
+        }
+    },
+    {
+        "name": "sea_lantern",
+        "model": "cube",
+        "textures": {
+            "texture": "sea_lantern"
+        }
+    },
+    {
+        "name": "glowstone",
+        "model": "cube",
+        "textures": {
+            "texture": "glowstone"
+        }
+    },
+    {
+        "name": "redstone_lamp_on",
+        "model": "cube",
+        "textures": {
+            "texture": "redstone_lamp_on"
+        }
+    },
+    {
+        "name": "gold_block",
+        "model": "cube",
+        "textures": {
+            "texture": "gold_block"
+        }
+    },
+    {
+        "name": "iron_block",
+        "model": "cube",
+        "textures": {
+            "texture": "iron_block"
+        }
+    },
+    {
+        "name": "diamond_block",
+        "model": "cube",
+        "textures": {
+            "texture": "diamond_block"
+        }
+    },
+    {
+        "name": "cut_copper",
+        "model": "cube",
+        "textures": {
+            "texture": "cut_copper"
+        }
     }
 ]

@@ -6,6 +6,7 @@ import { FileSelector } from "../../../common/FileSelector/FileSelector";
 import { Selector } from "../../../common/Selector/Selector";
 import { generateResourcepack } from "../../../data/resourcepack/generator";
 import { proxyfetch } from "../../../data/proxyfetch";
+import { TextField } from "../../../common/TextField/TextField";
 
 interface Version {
     id: string,
@@ -32,6 +33,7 @@ export function Resourcepack() {
     const [selectedVersion, setSelectedVersion] = useState("");
     const [selectedJar, setSelectedJar] = useState<File | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedSkin, setSelectedSkin] = useState<File | null>(null);
     
     useEffect(() => {
         proxyfetch("https://piston-meta.mojang.com/mc/game/version_manifest.json")
@@ -57,7 +59,7 @@ export function Resourcepack() {
     }));
     
     return (
-        <Box width={80} height={50} background={Color.Gray} text={Color.White} borderColor={Color.Black} border padded>
+        <Box width={80} height={50} background={Color.Gray} text={Color.White} borderColor={Color.Black} border padded scrollable>
             <Box width={20} />
             <Box width={34}>
                 <pre>
@@ -100,18 +102,26 @@ export function Resourcepack() {
                 <label htmlFor="file-selector">Select resourcepack: </label><br /><br />
                 <FileSelector id="file-selector" extension="zip" onSelect={setSelectedFile} /><br />
                 <br />
+                <Box width={75} height={7} background={Color.Purple} border padded borderColor={Color.Black}>
+                    <span>3.5) (Optional) Select your skin:</span><br />
+                    <br />
+                    <FileSelector id="skin-selector" extension="png" onSelect={setSelectedSkin} />
+                </Box>
                 <br />
+                <br />
+                <Box width={75} height={1} />
                 <span>4.) Generate the resourcepack</span><br />
                 <br />
                 <Button onClick={() => {
                         if (selectedJar && selectedFile)
-                            generateResourcepack(selectedJar, selectedFile);
+                            generateResourcepack(selectedJar, selectedFile, selectedSkin);
                     }} title="Generate pack" /><br />
                 <br />
                 <br />
                 <span>5.) Load the downloaded resourcepack ON TOP of VanillaPuddingTart</span><br />
                 <br />
-                <span>Don't share the generated file with anyone unless you have permission</span>
+                <span>Don't share the generated file with anyone unless you have explicit permission</span><br />
+                <br />
         </Box>
     )
 }
