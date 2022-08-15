@@ -1,7 +1,5 @@
 import JSZip from "jszip";
-import { resolve } from "path";
 import PNG from "png-ts";
-import { proxyfetch } from "../proxyfetch";
 import blockDatas from "./block_data.json";
 
 const MIN_IMAGE_SIZE = 16;

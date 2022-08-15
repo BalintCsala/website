@@ -6,7 +6,6 @@ import { FileSelector } from "../../../common/FileSelector/FileSelector";
 import { Selector } from "../../../common/Selector/Selector";
 import { generateResourcepack } from "../../../data/resourcepack/generator";
 import { proxyfetch } from "../../../data/proxyfetch";
-import { TextField } from "../../../common/TextField/TextField";
 
 interface Version {
     id: string,
