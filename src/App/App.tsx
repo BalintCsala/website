@@ -21,6 +21,11 @@ const NAVBAR_DATA = [
         shortcut: "a",
     },
     {
+        title: "Blog",
+        path: "https://blog.balintcsala.com",
+        shortcut: "b",
+    },
+    {
         title: "Source",
         path: "https://github.com/BalintCsala/balintcsala.github.io",
         shortcut: "s",

@@ -126,5 +126,133 @@
         "textures": {
             "texture": "cut_copper"
         }
+    },
+    {
+        "name": "white_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "white_concrete"
+        }
+    },
+    {
+        "name": "orange_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "orange_concrete"
+        }
+    },
+    {
+        "name": "magenta_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "magenta_concrete"
+        }
+    },
+    {
+        "name": "light_blue_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "light_blue_concrete"
+        }
+    },
+    {
+        "name": "yellow_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "yellow_concrete"
+        }
+    },
+    {
+        "name": "lime_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "lime_concrete"
+        }
+    },
+    {
+        "name": "pink_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "pink_concrete"
+        }
+    },
+    {
+        "name": "gray_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "gray_concrete"
+        }
+    },
+    {
+        "name": "light_gray_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "light_gray_concrete"
+        }
+    },
+    {
+        "name": "cyan_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "cyan_concrete"
+        }
+    },
+    {
+        "name": "purple_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "purple_concrete"
+        }
+    },
+    {
+        "name": "blue_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "blue_concrete"
+        }
+    },
+    {
+        "name": "brown_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "brown_concrete"
+        }
+    },
+    {
+        "name": "green_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "green_concrete"
+        }
+    },
+    {
+        "name": "red_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "red_concrete"
+        }
+    },
+    {
+        "name": "black_concrete",
+        "model": "cube",
+        "textures": {
+            "texture": "black_concrete"
+        }
     }
 ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

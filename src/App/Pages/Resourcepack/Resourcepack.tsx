@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { Color } from "../../../data/color";
 import { Box } from "../../../common/Box/Box";
 import { Button } from "../../../common/Button/Button";
 import { FileSelector } from "../../../common/FileSelector/FileSelector";
 import { Selector } from "../../../common/Selector/Selector";
-import { generateResourcepack } from "../../../data/resourcepack/generator";
+import { Color } from "../../../data/color";
 import { proxyfetch } from "../../../data/proxyfetch";
-import { TextField } from "../../../common/TextField/TextField";
+import { generateResourcepack } from "../../../data/resourcepack/generator";
 
 interface Version {
     id: string,

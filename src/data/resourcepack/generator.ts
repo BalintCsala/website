@@ -1,7 +1,5 @@
 import JSZip from "jszip";
-import { resolve } from "path";
 import PNG from "png-ts";
-import { proxyfetch } from "../proxyfetch";
 import blockDatas from "./block_data.json";
 
 const MIN_IMAGE_SIZE = 16;
@@ -35,7 +33,7 @@ async function waitForReader(reader: FileReader): Promise<ArrayBuffer> {
 async function waitForImageLoad(img: HTMLImageElement): Promise<null> {
     return new Promise(resolve => {
         img.onload = () => resolve(null);
-    })
+    });
 }
 
 function get(atlas: boolean[], x: number, y: number) {
@@ -118,7 +116,7 @@ class Texture {
     public albedo: PNG;
     public normal: PNG | null;
     public specular: PNG | null;
-    
+
     constructor(albedo: PNG, normal: PNG | null, specular: PNG | null) {
         this.albedo = albedo;
         this.normal = normal;
@@ -144,15 +142,18 @@ class Atlas {
     }
 
     putTexture(x: number, y: number, texture: PNG, useAlphaAsBlue: boolean = false) {
+        let multiplier = texture.pixelBitlength === 24 ? 3 : 4;
+
         const data = texture.decodePixels();
         for (let dx = 0; dx < texture.width; dx++) {
             for (let dy = 0; dy < texture.height; dy++) {
                 const ctxIndex = ((x + dx) + (y + dy) * this.size) * 4;
-                const index = (dx + dy * texture.width) * 4;
+                const index = (dx + dy * texture.width) * multiplier;
                 this.imgData.data[ctxIndex + 0] = data[index + 0];
                 this.imgData.data[ctxIndex + 1] = data[index + 1];
                 if (useAlphaAsBlue) {
-                    this.imgData.data[ctxIndex + 2] = data[index + 3];
+                    if (multiplier === 4)
+                        this.imgData.data[ctxIndex + 2] = data[index + 3];
                 } else {
                     this.imgData.data[ctxIndex + 2] = data[index + 2];
                 }
@@ -176,7 +177,7 @@ async function createAtlases(placedTextures: { x: number; y: number; textures: T
     const albedoAtlas = new Atlas(size);
     const normalAtlas = new Atlas(size);
     const specularAtlas = new Atlas(size);
-    
+
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
@@ -192,7 +193,7 @@ async function createAtlases(placedTextures: { x: number; y: number; textures: T
                 normalAtlas.putTexture(posX, posY, texture.normal);
             if (texture.specular)
                 specularAtlas.putTexture(posX, posY, texture.specular, true);
-            
+
             posX += texture.albedo.width;
         }
     }
@@ -202,7 +203,7 @@ async function createAtlases(placedTextures: { x: number; y: number; textures: T
         normalAtlas.toArrayBuffer(),
         specularAtlas.toArrayBuffer(),
     ]);
-    
+
 }
 
 enum Display {
@@ -302,7 +303,7 @@ async function createSkinTexture(img: HTMLImageElement): Promise<ArrayBuffer> {
     canvas.width = 16;
     canvas.height = 32;
     const ctx = canvas.getContext("2d")!!;
-    
+
     // Head
     ctx.drawImage(img, 8, 8, 8, 8, 4, 0, 8, 8);
     ctx.drawImage(img, 40, 8, 8, 8, 4, 0, 8, 8);
@@ -321,14 +322,14 @@ async function createSkinTexture(img: HTMLImageElement): Promise<ArrayBuffer> {
     // Right leg
     ctx.drawImage(img, 4, 20, 4, 16, 4, 20, 8, 12);
     ctx.drawImage(img, 4, 36, 4, 16, 4, 20, 8, 12);
-    
+
     return new Promise(resolve => {
         canvas.toBlob(blob => blob?.arrayBuffer()
-            .then(buffer => resolve(buffer)))
+            .then(buffer => resolve(buffer)));
     });
 }
 
-export async function generateResourcepack(jar: File, file: File, skin: File  | null) {
+export async function generateResourcepack(jar: File, file: File, skin: File | null) {
     const rpName = file.name.replace(".zip", "");
 
     console.log("Reading resourcepack...");
@@ -358,9 +359,9 @@ export async function generateResourcepack(jar: File, file: File, skin: File  | 
     let largestX = 0;
     let largestY = 0;
     let placedTextures: { x: number, y: number, textures: Texture[]; }[] = [];
-    
+
     console.log("Collecting textures...");
-    
+
     for (let blockData of blockDatas as unknown as BlockData[]) {
         const textureNames = MODEL_TEXTURES[blockData.model];
         const textures = (await Promise.all(textureNames.map(async textureName => {
@@ -389,22 +390,22 @@ export async function generateResourcepack(jar: File, file: File, skin: File  | 
             from: [1, 1, 1],
             to: [15, 15, 15],
             faces: {
-                up: { texture: "#marker", uv: [0, 0, 8, 16] },
-                down: { texture: "#marker", uv: [0, 0, 8, 16]}
+                up: { texture: "#marker", uv: [0, 0, 8, 16], tintindex: 0 },
+                down: { texture: "#marker", uv: [0, 0, 8, 16], tintindex: 0 }
             }
         });
         output.file(`assets/minecraft/models/block/${blockData.name}.json`, JSON.stringify(model));
     }
 
     console.log("Writing atlases...");
-    
+
     const [albedoBuffer, normalBuffer, specularBuffer] = await createAtlases(placedTextures, largestX, largestY);
     output.file("assets/minecraft/textures/effect/atlas.png", albedoBuffer, { binary: true });
     output.file("assets/minecraft/textures/effect/atlas_normal.png", normalBuffer, { binary: true });
     output.file("assets/minecraft/textures/effect/atlas_specular.png", specularBuffer, { binary: true });
 
     console.log("Removing ambient occlusion and shading");
-    
+
     const modelFolder = output.folder("assets/minecraft/models/block")!!;
     const files = modelFolder.files;
     const processed = new Set<string>();
@@ -412,65 +413,69 @@ export async function generateResourcepack(jar: File, file: File, skin: File  | 
     for (let file of Object.values(files)) {
         if (file.dir || !file.name.endsWith(".json"))
             continue;
-        
+
         const parts = file.name.split("/");
         const blockName = parts[parts.length - 1].replace(".json", "");
         processed.add(blockName);
-        
+
         missingParents.delete(blockName);
-                    
+
         let content = JSON.parse(await file.async("string")) as Model;
         if (content.parent) {
             const parentBlock = content.parent.replace(/(minecraft:)?block\//, "");
             if (!processed.has(parentBlock))
                 missingParents.add(parentBlock);
         }
-        
+
         addShadeAndAmbientOcclusion(content);
         output.file(file.name, JSON.stringify(content));
     }
-    
+
     console.log("Adding missing parents...");
-    
+
     while (missingParents.size > 0) {
         const next = missingParents.values().next().value;
         missingParents.delete(next);
+        if (next.startsWith("item") || next.startsWith("builtin"))
+            continue;
         processed.add(next);
-        
+console.log(next);
+
         const path = `assets/minecraft/models/block/${next}.json`;
+        
         let content = JSON.parse(await jarZip.file(path)?.async("string")!!);
         if (content.parent) {
             const parentBlock = content.parent.replace(/(minecraft:)?block\//, "");
             if (!processed.has(parentBlock))
                 missingParents.add(parentBlock);
         }
-        
+
         addShadeAndAmbientOcclusion(content);
         output.file(path, JSON.stringify(content));
     }
-    
+
     console.log("Adding mcmeta file...");
-    
+
     output.file("pack.mcmeta", JSON.stringify(mcmeta));
-    await Promise.all(promises);    
-    
-    if (skin !== null) {  
+    await Promise.all(promises);
+
+    if (skin !== null) {
         console.log("Creating skin");
         const img = new Image();
         let reader = new FileReader();
         reader.readAsDataURL(skin);
         img.src = await waitForReaderString(reader);
         await waitForImageLoad(img);
-        
+
         const skinBuffer = await createSkinTexture(img);
-        
-        output.file("assets/minecraft/textures/effect/steve.png", skinBuffer, {binary: true});
-        
+
+        output.file("assets/minecraft/textures/effect/steve.png", skinBuffer, { binary: true });
+
     }
-    
+
     console.log("Done");
-    
-    
+
+
     output.generateAsync({ type: "blob" })
         .then(blob => {
             const a = document.createElement("a");
