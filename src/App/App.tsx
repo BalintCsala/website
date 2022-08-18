@@ -24,6 +24,7 @@ const NAVBAR_DATA = [
         title: "Blog",
         path: "https://blog.balintcsala.com",
         shortcut: "b",
+        noblank: true,
     },
     {
         title: "Source",

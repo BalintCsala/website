@@ -69,7 +69,7 @@ const chars = CHARS
             .map((char, col) => (
                 <span key={col + row * 38} style={{ color: `var(--${COLORS[COLOR_INDICES[col + row * 38]]})` }}>{char}</span>
             )))
-        .reduce((total, next) => [...total, ...next, <br />], []);
+        .reduce((total, next, i) => [...total, ...next, <br key={"br" + i} />], []);
 
 export function Photo() {
     return (

@@ -4,7 +4,7 @@ import { Color } from "../../data/color";
 import { NavButton } from "./NavButton/NavButton";
 
 interface Props {
-    pages: {title: string, path: string, shortcut: string}[];
+    pages: {title: string, path: string, shortcut: string, noblank?: boolean}[];
 }
 
 export function NavBar({pages}: Props) {
@@ -19,11 +19,16 @@ export function NavBar({pages}: Props) {
                     key={i} 
                     active={location.pathname === page.path} 
                     onClick={() => {
-                        if (page.path.startsWith("http")) {
-                            window.open(page.path, "_blank")?.focus();
+                        if (page.noblank) {
+                            window.location.href = page.path;
                         } else {
-                            navigate(page.path)
+                            if (page.path.startsWith("http")) {
+                                window.open(page.path, "_blank")?.focus();
+                            } else {
+                                navigate(page.path)
+                            }
                         }
+                        
                     }}>
                         {page.title}
                 </NavButton>
