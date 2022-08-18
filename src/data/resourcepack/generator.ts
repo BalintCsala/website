@@ -436,14 +436,21 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
     while (missingParents.size > 0) {
         const next = missingParents.values().next().value;
         missingParents.delete(next);
-        if (next.startsWith("item") || next.startsWith("builtin"))
+        
+        const noNamespace = next.replace("minecraft:", "");
+        if (noNamespace.startsWith("item") || noNamespace.startsWith("builtin"))
             continue;
         processed.add(next);
-console.log(next);
-
-        const path = `assets/minecraft/models/block/${next}.json`;
+        console.log(next);
         
-        let content = JSON.parse(await jarZip.file(path)?.async("string")!!);
+
+        const path = `assets/minecraft/models/block/${noNamespace}.json`;
+        console.log(path);
+        
+        const file = jarZip.file(path);
+        if (file === null)
+            continue;
+        let content = JSON.parse(await file.async("string"));
         if (content.parent) {
             const parentBlock = content.parent.replace(/(minecraft:)?block\//, "");
             if (!processed.has(parentBlock))
