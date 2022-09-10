@@ -9,13 +9,14 @@ const ATLAS_GRID_SIZE = 2 ** POS_BITS;
 
 interface BlockData {
     name: string;
-    model: "cube" | "same_sides";
+    model: string;
     textures: { [key: string]: string; };
 }
 
-const MODEL_TEXTURES = {
+const MODEL_TEXTURES: {[key: string]: string[]} = {
     cube: ["texture"],
-    same_sides: ["top", "bottom", "side"]
+    same_sides: ["top", "bottom", "side"],
+    column: ["side", "end"],
 };
 
 async function waitForReaderString(reader: FileReader): Promise<string> {
@@ -146,7 +147,7 @@ class Atlas {
 
         const data = texture.decodePixels();
         for (let dx = 0; dx < texture.width; dx++) {
-            for (let dy = 0; dy < texture.height; dy++) {
+            for (let dy = 0; dy < texture.width; dy++) {
                 const ctxIndex = ((x + dx) + (y + dy) * this.size) * 4;
                 const index = (dx + dy * texture.width) * multiplier;
                 this.imgData.data[ctxIndex + 0] = data[index + 0];
@@ -157,7 +158,7 @@ class Atlas {
                 } else {
                     this.imgData.data[ctxIndex + 2] = data[index + 2];
                 }
-                this.imgData.data[ctxIndex + 3] = 255;
+                this.imgData.data[ctxIndex + 3] = (useAlphaAsBlue || multiplier === 3) ? 255 : data[index + 3];
             }
         }
     }
@@ -173,7 +174,7 @@ class Atlas {
 
 async function createAtlases(placedTextures: { x: number; y: number; textures: Texture[]; }[], largestX: number, largestY: number) {
     const size = 2 ** (Math.ceil(Math.log2(Math.max(largestX, largestY)))) * MIN_IMAGE_SIZE;
-
+    
     const albedoAtlas = new Atlas(size);
     const normalAtlas = new Atlas(size);
     const specularAtlas = new Atlas(size);
@@ -372,8 +373,11 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
             const specular = await loadPNG(resourcepackZip, jarZip, blockData.textures[textureName] + "_s");
             return new Texture(albedo, normal, specular);
         }))).filter(texture => texture !== null) as Texture[];
+        if (textures.length === 0)
+            continue;
 
         const maxSize = Math.max(...textures.map(texture => texture.albedo.width));
+        
         const [x, y] = findPlaceInAtlas(atlas, textures.length, maxSize);
         largestX = Math.max(largestX, x + maxSize * textures.length / MIN_IMAGE_SIZE);
         largestY = Math.max(largestY, y + maxSize / MIN_IMAGE_SIZE);
@@ -390,8 +394,8 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
             from: [1, 1, 1],
             to: [15, 15, 15],
             faces: {
-                up: { texture: "#marker", uv: [0, 0, 8, 16], tintindex: 0 },
-                down: { texture: "#marker", uv: [0, 0, 8, 16], tintindex: 0 }
+                up: { texture: "#marker", uv: [2, 2, 4, 4] },
+                down: { texture: "#marker", uv: [2, 2, 4, 4] }
             }
         });
         output.file(`assets/minecraft/models/block/${blockData.name}.json`, JSON.stringify(model));
