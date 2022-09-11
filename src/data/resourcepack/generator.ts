@@ -13,7 +13,7 @@ interface BlockData {
     textures: { [key: string]: string; };
 }
 
-const MODEL_TEXTURES: {[key: string]: string[]} = {
+const MODEL_TEXTURES: { [key: string]: string[]; } = {
     cube: ["texture"],
     same_sides: ["top", "bottom", "side"],
     column: ["side", "end"],
@@ -106,7 +106,6 @@ async function loadPNG(resourcepackZip: JSZip, jarZip: JSZip, textureName: strin
     if (!buffer)
         buffer = await jarZip.file(path)?.async("arraybuffer");
     if (!buffer) {
-        console.log(`Missing texture: ${textureName}`);
         return null;
     }
 
@@ -174,7 +173,7 @@ class Atlas {
 
 async function createAtlases(placedTextures: { x: number; y: number; textures: Texture[]; }[], largestX: number, largestY: number) {
     const size = 2 ** (Math.ceil(Math.log2(Math.max(largestX, largestY)))) * MIN_IMAGE_SIZE;
-    
+
     const albedoAtlas = new Atlas(size);
     const normalAtlas = new Atlas(size);
     const specularAtlas = new Atlas(size);
@@ -330,20 +329,18 @@ async function createSkinTexture(img: HTMLImageElement): Promise<ArrayBuffer> {
     });
 }
 
-export async function generateResourcepack(jar: File, file: File, skin: File | null) {
+export async function generateResourcepack(jar: File, file: File, skin: File | null, setMessage: (msg: string) => void, setProgress: (progress: number) => void) {
     const rpName = file.name.replace(".zip", "");
 
-    console.log("Reading resourcepack...");
+    setMessage("Reading resourcepack...");
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
     const rawResourcepackData = await waitForReader(reader);
     const resourcepackZip = await JSZip.loadAsync(rawResourcepackData);
-    console.log("Successfully read resourcepack");
-    console.log("Reading version jar...");
+    setMessage("Reading version jar...");
     reader.readAsArrayBuffer(jar);
     const rawJarData = await waitForReader(reader);
     const jarZip = await JSZip.loadAsync(rawJarData);
-    console.log("Successfully read jar file");
 
     const output = resourcepackZip;
 
@@ -361,9 +358,12 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
     let largestY = 0;
     let placedTextures: { x: number, y: number, textures: Texture[]; }[] = [];
 
-    console.log("Collecting textures...");
-
-    for (let blockData of blockDatas as unknown as BlockData[]) {
+    setMessage("Collecting textures...");
+    const datas = blockDatas as unknown as BlockData[];
+    setProgress(0);
+    let i = 0;
+    for (let blockData of datas) {
+        setProgress((i++) / datas.length);
         const textureNames = MODEL_TEXTURES[blockData.model];
         const textures = (await Promise.all(textureNames.map(async textureName => {
             const albedo = await loadPNG(resourcepackZip, jarZip, blockData.textures[textureName]);
@@ -377,7 +377,7 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
             continue;
 
         const maxSize = Math.max(...textures.map(texture => texture.albedo.width));
-        
+
         const [x, y] = findPlaceInAtlas(atlas, textures.length, maxSize);
         largestX = Math.max(largestX, x + maxSize * textures.length / MIN_IMAGE_SIZE);
         largestY = Math.max(largestY, y + maxSize / MIN_IMAGE_SIZE);
@@ -401,20 +401,28 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
         output.file(`assets/minecraft/models/block/${blockData.name}.json`, JSON.stringify(model));
     }
 
-    console.log("Writing atlases...");
+    setMessage("Writing atlases...");
 
     const [albedoBuffer, normalBuffer, specularBuffer] = await createAtlases(placedTextures, largestX, largestY);
+    setProgress(0);
     output.file("assets/minecraft/textures/effect/atlas.png", albedoBuffer, { binary: true });
+    setProgress(0.333);
     output.file("assets/minecraft/textures/effect/atlas_normal.png", normalBuffer, { binary: true });
+    setProgress(0.666);
     output.file("assets/minecraft/textures/effect/atlas_specular.png", specularBuffer, { binary: true });
+    setProgress(1);
 
-    console.log("Removing ambient occlusion and shading");
+    setMessage("Removing ambient occlusion and shading");
 
     const modelFolder = output.folder("assets/minecraft/models/block")!!;
     const files = modelFolder.files;
     const processed = new Set<string>();
     let missingParents = new Set<string>();
-    for (let file of Object.values(files)) {
+    const fileValues = Object.values(files);
+    i = 0;
+    setProgress(0);
+    for (let file of fileValues) {
+        setProgress((i++) / fileValues.length);
         if (file.dir || !file.name.endsWith(".json"))
             continue;
 
@@ -435,22 +443,22 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
         output.file(file.name, JSON.stringify(content));
     }
 
-    console.log("Adding missing parents...");
+    setMessage("Adding missing parents...");
 
+    const missingParentCount = missingParents.size;
+    setProgress(0);
     while (missingParents.size > 0) {
+        setProgress(1 - (missingParents.size / missingParentCount));
         const next = missingParents.values().next().value;
         missingParents.delete(next);
-        
+
         const noNamespace = next.replace("minecraft:", "");
         if (noNamespace.startsWith("item") || noNamespace.startsWith("builtin"))
             continue;
         processed.add(next);
-        console.log(next);
-        
 
         const path = `assets/minecraft/models/block/${noNamespace}.json`;
-        console.log(path);
-        
+
         const file = jarZip.file(path);
         if (file === null)
             continue;
@@ -464,14 +472,14 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
         addShadeAndAmbientOcclusion(content);
         output.file(path, JSON.stringify(content));
     }
-
-    console.log("Adding mcmeta file...");
+    setProgress(1);
+    setMessage("Adding mcmeta file...");
 
     output.file("pack.mcmeta", JSON.stringify(mcmeta));
     await Promise.all(promises);
 
     if (skin !== null) {
-        console.log("Creating skin");
+        setMessage("Creating skin");
         const img = new Image();
         let reader = new FileReader();
         reader.readAsDataURL(skin);
@@ -484,8 +492,7 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
 
     }
 
-    console.log("Done");
-
+    setMessage("Done");
 
     output.generateAsync({ type: "blob" })
         .then(blob => {

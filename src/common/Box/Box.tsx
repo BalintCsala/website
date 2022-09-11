@@ -55,7 +55,7 @@ export function Box({className = "", border = false, scrollable = false, title, 
         
         leading = Math.floor(freeSpace * (scrollOffset / (charHeight - height - 1)));
         leading = Math.max(leading, 0);
-        knobSize = Math.min((height - 4) - freeSpace, height - 4 - (padded ? 7 : 0));
+        knobSize = Math.min((height - 5) - freeSpace, height - 4 - (padded ? 7 : 0));
     }
     
     return (

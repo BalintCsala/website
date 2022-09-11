@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Box } from "../../../common/Box/Box";
 import { Button } from "../../../common/Button/Button";
 import { FileSelector } from "../../../common/FileSelector/FileSelector";
+import { ProgressBar } from "../../../common/ProgressBar/ProgressBar";
 import { Selector } from "../../../common/Selector/Selector";
 import { Color } from "../../../data/color";
 import { proxyfetch } from "../../../data/proxyfetch";
@@ -33,6 +34,8 @@ export function Resourcepack() {
     const [selectedJar, setSelectedJar] = useState<File | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedSkin, setSelectedSkin] = useState<File | null>(null);
+    const [message, setMessage] = useState<string>("");
+    const [progress, setProgress] = useState<number>(0);
     
     useEffect(() => {
         proxyfetch("https://piston-meta.mojang.com/mc/game/version_manifest.json")
@@ -111,15 +114,20 @@ export function Resourcepack() {
                 <Box width={75} height={1} />
                 <span>4.) Generate the resourcepack</span><br />
                 <br />
-                <Button onClick={() => {
+                <Button 
+                    onClick={() => {
                         if (selectedJar && selectedFile)
-                            generateResourcepack(selectedJar, selectedFile, selectedSkin);
+                            generateResourcepack(selectedJar, selectedFile, selectedSkin, setMessage, setProgress);
                     }} title="Generate pack" /><br />
+                <br />
+                <span>Current task: {message}</span><br />
+                <br />
+                <ProgressBar progress={progress} width={75}/>
                 <br />
                 <br />
                 <span>5.) Load the downloaded resourcepack ON TOP of VanillaPuddingTart</span><br />
                 <br />
-                <span>Don't share the generated file with anyone unless you have explicit permission</span><br />
+                <span style={{color: "var(--navy)"}} className="noshadow">Don't share the generated file with anyone unless you have explicit permission!</span><br />
                 <br />
         </Box>
     )
