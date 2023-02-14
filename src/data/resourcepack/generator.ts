@@ -177,31 +177,33 @@ async function createAtlases(placedTextures: { x: number; y: number; textures: T
     const albedoAtlas = new Atlas(size);
     const normalAtlas = new Atlas(size);
     const specularAtlas = new Atlas(size);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d")!!;
-    const imageData = ctx.getImageData(0, 0, size, size);
+    const combinedAtlas = new Atlas(size * 2);
 
     for (let { x, y, textures } of placedTextures) {
         let posX = x * MIN_IMAGE_SIZE;
         let posY = y * MIN_IMAGE_SIZE;
         for (let texture of textures) {
             albedoAtlas.putTexture(posX, posY, texture.albedo);
-            if (texture.normal)
+            combinedAtlas.putTexture(posX, posY, texture.albedo);
+            if (texture.normal) {
                 normalAtlas.putTexture(posX, posY, texture.normal);
-            if (texture.specular)
+                combinedAtlas.putTexture(posX + size, posY, texture.normal);
+            }
+            if (texture.specular) {
                 specularAtlas.putTexture(posX, posY, texture.specular, true);
+                combinedAtlas.putTexture(posX, posY + size, texture.specular, true);
+            }
 
             posX += texture.albedo.width;
         }
     }
-    ctx.putImageData(imageData, 0, 0);
+    
     return Promise.all([
         albedoAtlas.toArrayBuffer(),
         normalAtlas.toArrayBuffer(),
         specularAtlas.toArrayBuffer(),
+        combinedAtlas.toArrayBuffer(),
+        size * 2,
     ]);
 
 }
@@ -403,16 +405,27 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
 
     setMessage("Writing atlases...");
 
-    const [albedoBuffer, normalBuffer, specularBuffer] = await createAtlases(placedTextures, largestX, largestY);
+    const [albedoBuffer, normalBuffer, specularBuffer, combinedBuffer, size] = await createAtlases(placedTextures, largestX, largestY);
+    
+    if (size > 8192) {
+        alert("This pack won't load on Intel graphics cards because the atlas is too large. Use a different pack if you have one of these.");
+    } else if (size > 16384) {
+        alert("This pack won't load on Intel or AMD graphics cards because the atlas is too large. Use a different pack if you have one of these.");
+    } else if (size > 32768) {
+        alert("This pack won't load on any graphics card because the atlas is too large. Please use a different pack.");
+        return;
+    }
     setProgress(0);
     output.file("assets/minecraft/textures/effect/atlas.png", albedoBuffer, { binary: true });
-    setProgress(0.333);
+    setProgress(0.25);
     output.file("assets/minecraft/textures/effect/atlas_normal.png", normalBuffer, { binary: true });
-    setProgress(0.666);
+    setProgress(0.5);
     output.file("assets/minecraft/textures/effect/atlas_specular.png", specularBuffer, { binary: true });
+    setProgress(0.75);
+    output.file("assets/minecraft/textures/effect/atlas_combined.png", combinedBuffer, { binary: true });
     setProgress(1);
 
-    setMessage("Removing ambient occlusion and shading");
+    setMessage("Removing ambient occlusion and shading ...");
 
     const modelFolder = output.folder("assets/minecraft/models/block")!!;
     const files = modelFolder.files;
