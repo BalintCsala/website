@@ -1,511 +1,195 @@
 import JSZip from "jszip";
-import PNG from "png-ts";
-import blockDatas from "./block_data.json";
+import { waitForReader } from "../promises";
+import { Atlas } from "./atlas";
+import { FileRef, readFile } from "./file";
+import { Face, Model, createDataTexture, disableShading, encodeModel, simplifyModel } from "./model";
+import { Multipart, convertMultipartToVariant } from './multipart';
+import { Variants, applyReferences } from './variants';
+import { ImageData, encode } from "fast-png";
 
-const MIN_IMAGE_SIZE = 16;
-const POS_BITS = 11;
+const models = new Map<string, FileRef<Model>>();
+const generatedModels = new Map<string, FileRef<Model>>();
+const variants = new Map<string, FileRef<Variants>>();
 
-const ATLAS_GRID_SIZE = 2 ** POS_BITS;
-
-interface BlockData {
-    name: string;
-    model: string;
-    textures: { [key: string]: string; };
-}
-
-const MODEL_TEXTURES: { [key: string]: string[]; } = {
-    cube: ["texture"],
-    same_sides: ["top", "bottom", "side"],
-    column: ["side", "end"],
-};
-
-async function waitForReaderString(reader: FileReader): Promise<string> {
-    return new Promise(resolve => {
-        reader.onload = () => resolve(reader.result as string);
+async function collectModels(zip: JSZip) {
+    const promises: Promise<any>[] = [];
+    zip.folder("assets/minecraft/models/block")?.forEach((path, file) => {
+        const name = path.replace(".json", "");
+        promises.push(readFile<Model>(file, name)
+            .then(model => models.set(name, model)));
     });
+    await Promise.all(promises);
 }
 
-async function waitForReader(reader: FileReader): Promise<ArrayBuffer> {
-    return new Promise(resolve => {
-        reader.onload = () => resolve(reader.result as ArrayBuffer);
-    });
-}
-
-async function waitForImageLoad(img: HTMLImageElement): Promise<null> {
-    return new Promise(resolve => {
-        img.onload = () => resolve(null);
-    });
-}
-
-function get(atlas: boolean[], x: number, y: number) {
-    return atlas[x + y * ATLAS_GRID_SIZE] ?? false;
-}
-
-function set(atlas: boolean[], x: number, y: number) {
-    atlas[x + y * ATLAS_GRID_SIZE] = true;
-}
-
-function findPlaceInAtlas(atlas: boolean[], textureCount: number, size: number): [number, number] {
-    const cellWidth = (textureCount * size) / MIN_IMAGE_SIZE;
-    const cellHeight = size / MIN_IMAGE_SIZE;
-    for (let i = 0; i < ATLAS_GRID_SIZE; i++) {
-        for (let j = 0; j < 2 * i + 1; j++) {
-            let x = Math.min(j, i);
-            let y = i - Math.max(j - i, 0);
-            let foundX = true;
-            for (let dx = 0; dx < cellWidth; dx++) {
-                let foundY = true;
-                for (let dy = 0; dy < cellHeight; dy++) {
-                    if (get(atlas, x + dx, y + dy)) {
-                        foundY = false;
-                        break;
-                    }
-                }
-                if (!foundY) {
-                    foundX = false;
-                    break;
-                }
-            }
-            if (foundX) {
-                for (let dx = 0; dx < cellWidth; dx++) {
-                    for (let dy = 0; dy < cellHeight; dy++) {
-                        set(atlas, x + dx, y + dy);
-                    }
-                }
-                return [x, y];
-            }
-        }
-    }
-
-    return [-1, -1];
-}
-
-function createDataTexture(x: number, y: number, size: number, zip: JSZip, block: string): Promise<boolean> {
-    let sizeData = Math.floor(Math.log2(size / MIN_IMAGE_SIZE));
-    let index = x | (y << POS_BITS) | (sizeData << (POS_BITS + POS_BITS));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = 2;
-    canvas.height = 1;
-    const ctx = canvas.getContext("2d")!!;
-    ctx.fillStyle = `rgb(${[255, 0, 255]})`;
-    ctx.fillRect(0, 0, 1, 1);
-    ctx.fillStyle = `rgb(${[index & 0xFF, (index >> 8) & 0xFF, index >> 16]})`;
-    ctx.fillRect(1, 0, 1, 1);
-    return new Promise(resolve => {
-        canvas.toBlob(blob => {
-            zip.file(`assets/minecraft/textures/block/${block}_data.png`, blob?.arrayBuffer()!!, { binary: true });
-            resolve(true);
+async function collectVariants(zip: JSZip) {
+    const files: FileRef<Multipart | Variants>[] = [];
+    const promises: Promise<any>[] = [];
+    zip.folder("assets/minecraft/blockstates")
+        ?.forEach((path, file) => {
+            promises.push(readFile<Multipart | Variants>(file, path.replace(".json", ""))
+                .then(file => files.push(file)));
         });
-    });
-};
 
-async function loadPNG(resourcepackZip: JSZip, jarZip: JSZip, textureName: string) {
-    const path = `assets/minecraft/textures/block/${textureName}.png`;
-    let buffer = await resourcepackZip.file(path)?.async("arraybuffer");
-    if (!buffer)
-        buffer = await jarZip.file(path)?.async("arraybuffer");
-    if (!buffer) {
-        return null;
-    }
+    await Promise.all(promises);
 
-    return PNG.load(new Uint8Array(buffer));
-}
-
-class Texture {
-    public albedo: PNG;
-    public normal: PNG | null;
-    public specular: PNG | null;
-
-    constructor(albedo: PNG, normal: PNG | null, specular: PNG | null) {
-        this.albedo = albedo;
-        this.normal = normal;
-        this.specular = specular;
-    }
-}
-
-class Atlas {
-    private canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D;
-    private imgData: ImageData;
-    private size: number;
-
-    constructor(size: number) {
-        this.canvas = document.createElement("canvas");
-        this.canvas.width = size;
-        this.canvas.height = size;
-        this.ctx = this.canvas.getContext("2d")!!;
-        this.ctx.fillStyle = "black";
-        this.ctx.fillRect(0, 0, size, size);
-        this.imgData = this.ctx.getImageData(0, 0, size, size);
-        this.size = size;
-    }
-
-    putTexture(x: number, y: number, texture: PNG, useAlphaAsBlue: boolean = false) {
-        let multiplier = texture.pixelBitlength === 24 ? 3 : 4;
-
-        const data = texture.decodePixels();
-        for (let dx = 0; dx < texture.width; dx++) {
-            for (let dy = 0; dy < texture.width; dy++) {
-                const ctxIndex = ((x + dx) + (y + dy) * this.size) * 4;
-                const index = (dx + dy * texture.width) * multiplier;
-                this.imgData.data[ctxIndex + 0] = data[index + 0];
-                this.imgData.data[ctxIndex + 1] = data[index + 1];
-                if (useAlphaAsBlue) {
-                    if (multiplier === 4)
-                        this.imgData.data[ctxIndex + 2] = data[index + 3];
-                } else {
-                    this.imgData.data[ctxIndex + 2] = data[index + 2];
-                }
-                this.imgData.data[ctxIndex + 3] = (useAlphaAsBlue || multiplier === 3) ? 255 : data[index + 3];
-            }
+    files.forEach(file => {
+        if ("multipart" in file.data) {
+            variants.set(file.name, convertMultipartToVariant(file as FileRef<Multipart>, models));
+            return;
         }
-    }
 
-    async toArrayBuffer(): Promise<ArrayBuffer> {
-        this.ctx.putImageData(this.imgData, 0, 0);
-        return new Promise(resolve => {
-            this.canvas.toBlob(blob => blob?.arrayBuffer()
-                .then(buffer => resolve(buffer)));
-        });
-    }
-}
-
-async function createAtlases(placedTextures: { x: number; y: number; textures: Texture[]; }[], largestX: number, largestY: number) {
-    const size = 2 ** (Math.ceil(Math.log2(Math.max(largestX, largestY)))) * MIN_IMAGE_SIZE;
-
-    const albedoAtlas = new Atlas(size);
-    const normalAtlas = new Atlas(size);
-    const specularAtlas = new Atlas(size);
-    const combinedAtlas = new Atlas(size * 2);
-
-    for (let { x, y, textures } of placedTextures) {
-        let posX = x * MIN_IMAGE_SIZE;
-        let posY = y * MIN_IMAGE_SIZE;
-        for (let texture of textures) {
-            albedoAtlas.putTexture(posX, posY, texture.albedo);
-            combinedAtlas.putTexture(posX, posY, texture.albedo);
-            if (texture.normal) {
-                normalAtlas.putTexture(posX, posY, texture.normal);
-                combinedAtlas.putTexture(posX + size, posY, texture.normal);
-            }
-            if (texture.specular) {
-                specularAtlas.putTexture(posX, posY, texture.specular, true);
-                combinedAtlas.putTexture(posX, posY + size, texture.specular, true);
-            }
-
-            posX += texture.albedo.width;
-        }
-    }
-    
-    return Promise.all([
-        albedoAtlas.toArrayBuffer(),
-        normalAtlas.toArrayBuffer(),
-        specularAtlas.toArrayBuffer(),
-        combinedAtlas.toArrayBuffer(),
-        size * 2,
-    ]);
-
-}
-
-enum Display {
-    ThirdpersonRighthand = "thirdperson_righthand",
-    ThirdpersonLefthand = "thirdperson_lefthand",
-    FirstpersonRighthand = "firstperson_righthand",
-    FirstpersonLefthand = "firstperson_lefthand",
-    Gui = "gui",
-    Head = "head",
-    Ground = "ground",
-    Fixed = "fixed",
-}
-
-enum Face {
-    Down = "down",
-    Up = "up",
-    North = "north",
-    South = "south",
-    West = "west",
-    East = "east"
-}
-
-interface Model {
-    parent?: string;
-    ambientocclusion?: boolean;
-    display?: {
-        [key in Display]: {
-            rotation: [number, number, number];
-            translation: [number, number, number];
-            scale: [number, number, number];
-        };
-    };
-    textures?: {
-        [key: string]: string;
-    };
-    elements?: {
-        from: [number, number, number];
-        to: [number, number, number];
-        rotation?: {
-            origin: [number, number, number];
-            axis: "x" | "y" | "z";
-            angle: number;
-            rescale?: boolean;
-        };
-        shade?: boolean;
-        faces: {
-            [key in Face]?: {
-                uv?: [number, number, number, number];
-                texture: `#${string}`;
-                cullface?: Face;
-                rotation?: number;
-                tintindex?: number;
-            }
-        };
-    }[];
-}
-
-async function mergeBlockModel(block: string, jar: JSZip): Promise<Model> {
-    let model: Model = {};
-    let current: string | undefined = block;
-    while (model.elements === undefined) {
-        const file = jar.file(`assets/minecraft/models/block/${current}.json`);
-
-        if (!file) {
-            console.error(`Failed to open model file ${current}.json`);
-            return model;
-        }
-        const content = JSON.parse(await file.async("text")) as Model;
-        current = content.parent?.replace(/(minecraft:)?block\//, "");
-        model = {
-            ...content,
-            ...model,
-            textures: { ...model.textures, ...content.textures },
-            elements: content.elements,
-        };
-
-        if (!current)
-            break;
-
-        model.parent = `block/${current}`;
-    }
-
-    return model;
-}
-
-function addShadeAndAmbientOcclusion(model: Model) {
-    model.ambientocclusion = false;
-    if (model.elements) {
-        for (let i = 0; i < model.elements.length; i++) {
-            model.elements[i].shade = false;
-        }
-    }
-}
-
-async function createSkinTexture(img: HTMLImageElement): Promise<ArrayBuffer> {
-    const canvas = document.createElement("canvas");
-    canvas.width = 16;
-    canvas.height = 32;
-    const ctx = canvas.getContext("2d")!!;
-
-    // Head
-    ctx.drawImage(img, 8, 8, 8, 8, 4, 0, 8, 8);
-    ctx.drawImage(img, 40, 8, 8, 8, 4, 0, 8, 8);
-    // Body
-    ctx.drawImage(img, 20, 20, 8, 12, 4, 8, 8, 12);
-    ctx.drawImage(img, 20, 36, 8, 12, 4, 8, 8, 12);
-    // Left arm
-    ctx.drawImage(img, 36, 52, 4, 12, 0, 8, 4, 12);
-    ctx.drawImage(img, 52, 52, 4, 12, 0, 8, 4, 12);
-    // Right arm
-    ctx.drawImage(img, 44, 20, 4, 12, 12, 8, 4, 12);
-    ctx.drawImage(img, 44, 36, 4, 12, 12, 8, 4, 12);
-    // Left leg
-    ctx.drawImage(img, 20, 52, 4, 12, 4, 20, 4, 12);
-    ctx.drawImage(img, 4, 36, 4, 12, 4, 20, 4, 12);
-    // Right leg
-    ctx.drawImage(img, 4, 20, 4, 16, 4, 20, 8, 12);
-    ctx.drawImage(img, 4, 36, 4, 16, 4, 20, 8, 12);
-
-    return new Promise(resolve => {
-        canvas.toBlob(blob => blob?.arrayBuffer()
-            .then(buffer => resolve(buffer)));
+        variants.set(file.name, file as FileRef<Variants>);
     });
 }
 
-export async function generateResourcepack(jar: File, file: File, skin: File | null, setMessage: (msg: string) => void, setProgress: (progress: number) => void) {
-    const rpName = file.name.replace(".zip", "");
+export async function newGenerateResourcepack(jar: File, zip: File, skin: File | null, setMessage: (msg: string) => void, setProgress: (progress: number) => void) {
+    let counter = 0;
+    const rpName = zip.name.replace(".zip", "");
 
     setMessage("Reading resourcepack...");
     const reader = new FileReader();
-    reader.readAsArrayBuffer(file);
-    const rawResourcepackData = await waitForReader(reader);
+    reader.readAsArrayBuffer(zip);
+    const rawResourcepackData = await waitForReader<ArrayBuffer>(reader);
     const resourcepackZip = await JSZip.loadAsync(rawResourcepackData);
+
     setMessage("Reading version jar...");
     reader.readAsArrayBuffer(jar);
-    const rawJarData = await waitForReader(reader);
+    const rawJarData = await waitForReader<ArrayBuffer>(reader);
     const jarZip = await JSZip.loadAsync(rawJarData);
 
     const output = resourcepackZip;
 
+    setMessage("Replacing pack.mcmeta...");
+    const originalMcmeta = JSON.parse(await resourcepackZip.file("pack.mcmeta")!.async("text"));
     const mcmeta = {
         pack: {
-            pack_format: 9,
+            pack_format: originalMcmeta.pack.pack_format,
             description: "VanillaPuddingTart - " + rpName
         }
     };
+    output.file("pack.mcmeta", JSON.stringify(mcmeta));
 
-    let promises: Promise<boolean>[] = [];
+    models.clear();
+    generatedModels.clear();
 
-    let atlas: boolean[] = [];
-    let largestX = 0;
-    let largestY = 0;
-    let placedTextures: { x: number, y: number, textures: Texture[]; }[] = [];
+    setMessage("Reading models...");
+
+    await collectModels(jarZip);
+    await collectModels(resourcepackZip);
+
+    setMessage("Reading blockstates...");
+
+    await collectVariants(jarZip);
+    await collectVariants(resourcepackZip);
+
+    setMessage("Applying references...");
+
+    counter = 0;
+    variants.forEach(variantFile => {
+        setProgress(++counter / variants.size)
+        return applyReferences(variantFile, models, generatedModels);
+    });
+
+    setMessage("Applying changes to models...");
+
+    const newModels = [...generatedModels.values()];
+    newModels.forEach(model => simplifyModel(model.data));
+    newModels.forEach(model => disableShading(model.data));
+
+    setMessage("Saving blockstates...");
+
+    counter = 0;
+    variants.forEach(variantFile => {
+        setProgress(++counter / variants.size);
+        output.file(`assets/minecraft/blockstates/${variantFile.name}.json`, JSON.stringify(variantFile.data));
+    });
+
+    const atlas = new Atlas();
+    const textures = new Map<string, { name: string, folder: JSZip; }>();
+    const jarBlocks = jarZip.folder("assets/minecraft/textures/block");
+    const rpBlocks = resourcepackZip.folder("assets/minecraft/textures/block");
 
     setMessage("Collecting textures...");
-    const datas = blockDatas as unknown as BlockData[];
-    setProgress(0);
-    let i = 0;
-    for (let blockData of datas) {
-        setProgress((i++) / datas.length);
-        const textureNames = MODEL_TEXTURES[blockData.model];
-        const textures = (await Promise.all(textureNames.map(async textureName => {
-            const albedo = await loadPNG(resourcepackZip, jarZip, blockData.textures[textureName]);
-            if (!albedo)
-                return null;
-            const normal = await loadPNG(resourcepackZip, jarZip, blockData.textures[textureName] + "_n");
-            const specular = await loadPNG(resourcepackZip, jarZip, blockData.textures[textureName] + "_s");
-            return new Texture(albedo, normal, specular);
-        }))).filter(texture => texture !== null) as Texture[];
-        if (textures.length === 0)
-            continue;
 
-        const maxSize = Math.max(...textures.map(texture => texture.albedo.width));
+    jarBlocks?.forEach(path => {
+        textures.set(path, { name: path, folder: jarBlocks });
+    });
+    rpBlocks?.forEach(path => {
+        textures.set(path, { name: path, folder: rpBlocks });
+    });
 
-        const [x, y] = findPlaceInAtlas(atlas, textures.length, maxSize);
-        largestX = Math.max(largestX, x + maxSize * textures.length / MIN_IMAGE_SIZE);
-        largestY = Math.max(largestY, y + maxSize / MIN_IMAGE_SIZE);
+    setMessage("Generating the atlas...");
 
-        placedTextures.push({ x, y, textures });
-        promises.push(createDataTexture(x, y, maxSize, output, blockData.name));
-        let model = await mergeBlockModel(blockData.name, jarZip);
-        if (!model.elements || !model.textures) {
-            console.error(`Failed to merge model file for ${blockData.name}`);
-            continue;
-        }
-        model.textures["marker"] = `minecraft:block/${blockData.name}_data`;
-        model.elements.push({
-            from: [1, 1, 1],
-            to: [15, 15, 15],
-            faces: {
-                up: { texture: "#marker", uv: [2, 2, 4, 4] },
-                down: { texture: "#marker", uv: [2, 2, 4, 4] }
-            }
-        });
-        output.file(`assets/minecraft/models/block/${blockData.name}.json`, JSON.stringify(model));
-    }
+    await Promise.all([...textures.values()]
+        .filter(({name, }) => name.endsWith("png") && !name.endsWith("_n.png") && !name.endsWith("_s.png"))
+        .map(async ({name, folder}, i, arr) => {
+            setProgress(i / arr.length);
+            const textureName = name.replace(".png", "");
+            await atlas.addTexture(textureName, folder);
+        }));
 
-    setMessage("Writing atlases...");
+    atlas.generateLocations();
+    const atlasData = atlas.generateAtlas();
 
-    const [albedoBuffer, normalBuffer, specularBuffer, combinedBuffer, size] = await createAtlases(placedTextures, largestX, largestY);
+    setMessage("Saving the atlas...");
+
+    output.file("assets/minecraft/textures/effect/atlas_combined.png", atlasData);
+
+    setMessage("Generating block models...");
+
+    const rows = newModels.map((model, i) => {
+        setProgress(i / newModels.length);
+        return encodeModel(model.data, atlas);
+    });
+    const maxRowLength = Math.max(...rows.map(row => row.length));
+
+    setMessage("Saving block models...");
     
-    if (size > 8192) {
-        alert("This pack won't load on Intel graphics cards because the atlas is too large. Use a different pack if you have one of these.");
-    } else if (size > 16384) {
-        alert("This pack won't load on Intel or AMD graphics cards because the atlas is too large. Use a different pack if you have one of these.");
-    } else if (size > 32768) {
-        alert("This pack won't load on any graphics card because the atlas is too large. Please use a different pack.");
-        return;
-    }
-    setProgress(0);
-    output.file("assets/minecraft/textures/effect/atlas.png", albedoBuffer, { binary: true });
-    setProgress(0.25);
-    output.file("assets/minecraft/textures/effect/atlas_normal.png", normalBuffer, { binary: true });
-    setProgress(0.5);
-    output.file("assets/minecraft/textures/effect/atlas_specular.png", specularBuffer, { binary: true });
-    setProgress(0.75);
-    output.file("assets/minecraft/textures/effect/atlas_combined.png", combinedBuffer, { binary: true });
-    setProgress(1);
+    const data = rows.map(row => [...row, ...new Array(maxRowLength - row.length).fill(0)]).flat();
+    const png: ImageData = {
+        width: maxRowLength / 4,
+        height: rows.length,
+        data: new Uint8Array(data),
+        channels: 4,
+        depth: 8,
+    };
+    output.file("assets/minecraft/textures/effect/model_data.png", encode(png));
+    // TODO: Steve
 
-    setMessage("Removing ambient occlusion and shading ...");
+    setMessage("Creating markers...");
 
-    const modelFolder = output.folder("assets/minecraft/models/block")!!;
-    const files = modelFolder.files;
-    const processed = new Set<string>();
-    let missingParents = new Set<string>();
-    const fileValues = Object.values(files);
-    i = 0;
-    setProgress(0);
-    for (let file of fileValues) {
-        setProgress((i++) / fileValues.length);
-        if (file.dir || !file.name.endsWith(".json"))
-            continue;
+    newModels.forEach((model, i) => {
+        setProgress(i / newModels.length);
+        model.data.textures["marker"] = `minecraft:block/${model.name}_data__`;
+        model.data.elements?.push(
+            {
+                from: [7, 7, 7],
+                to: [9, 9, 9],
+                faces: {
+                    [Face.up]: {
+                        texture: "#marker",
+                        uv: [2, 2, 4, 4],
+                        tintindex: 0,
+                    },
+                    [Face.down]: {
+                        texture: "#marker",
+                        uv: [2, 2, 4, 4],
+                        tintindex: 0,
+                    }
+                },
+                shade: false
+            });
+        output.file(`assets/minecraft/textures/block/${model.name}_data__.png`, createDataTexture(i));
+    });
 
-        const parts = file.name.split("/");
-        const blockName = parts[parts.length - 1].replace(".json", "");
-        processed.add(blockName);
+    setMessage("Saving models...");
 
-        missingParents.delete(blockName);
+    newModels.forEach((model, i) => {
+        setProgress(i / newModels.length);
+        output.file(`assets/minecraft/models/block/${model.name}.json`, JSON.stringify(model.data));
+    });
 
-        let content = JSON.parse(await file.async("string")) as Model;
-        if (content.parent) {
-            const parentBlock = content.parent.replace(/(minecraft:)?block\//, "");
-            if (!processed.has(parentBlock))
-                missingParents.add(parentBlock);
-        }
-
-        addShadeAndAmbientOcclusion(content);
-        output.file(file.name, JSON.stringify(content));
-    }
-
-    setMessage("Adding missing parents...");
-
-    const missingParentCount = missingParents.size;
-    setProgress(0);
-    while (missingParents.size > 0) {
-        setProgress(1 - (missingParents.size / missingParentCount));
-        const next = missingParents.values().next().value;
-        missingParents.delete(next);
-
-        const noNamespace = next.replace("minecraft:", "");
-        if (noNamespace.startsWith("item") || noNamespace.startsWith("builtin"))
-            continue;
-        processed.add(next);
-
-        const path = `assets/minecraft/models/block/${noNamespace}.json`;
-
-        const file = jarZip.file(path);
-        if (file === null)
-            continue;
-        let content = JSON.parse(await file.async("string"));
-        if (content.parent) {
-            const parentBlock = content.parent.replace(/(minecraft:)?block\//, "");
-            if (!processed.has(parentBlock))
-                missingParents.add(parentBlock);
-        }
-
-        addShadeAndAmbientOcclusion(content);
-        output.file(path, JSON.stringify(content));
-    }
-    setProgress(1);
-    setMessage("Adding mcmeta file...");
-
-    output.file("pack.mcmeta", JSON.stringify(mcmeta));
-    await Promise.all(promises);
-
-    if (skin !== null) {
-        setMessage("Creating skin");
-        const img = new Image();
-        let reader = new FileReader();
-        reader.readAsDataURL(skin);
-        img.src = await waitForReaderString(reader);
-        await waitForImageLoad(img);
-
-        const skinBuffer = await createSkinTexture(img);
-
-        output.file("assets/minecraft/textures/effect/steve.png", skinBuffer, { binary: true });
-
-    }
-
-    setMessage("Done");
+    setMessage("Done!")
 
     output.generateAsync({ type: "blob" })
         .then(blob => {

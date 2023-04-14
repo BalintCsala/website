@@ -6,7 +6,7 @@ import { ProgressBar } from "../../../common/ProgressBar/ProgressBar";
 import { Selector } from "../../../common/Selector/Selector";
 import { Color } from "../../../data/color";
 import { proxyfetch } from "../../../data/proxyfetch";
-import { generateResourcepack } from "../../../data/resourcepack/generator";
+import { newGenerateResourcepack as generateResourcepack } from "../../../data/resourcepack/generator";
 
 interface Version {
     id: string,
@@ -29,14 +29,14 @@ interface Manifest {
 export function Resourcepack() {
     const [loading, setLoading] = useState(true);
     const [versions, setVersions] = useState<Version[]>([]);
-    
+
     const [selectedVersion, setSelectedVersion] = useState("");
     const [selectedJar, setSelectedJar] = useState<File | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedSkin, setSelectedSkin] = useState<File | null>(null);
     const [message, setMessage] = useState<string>("");
     const [progress, setProgress] = useState<number>(0);
-    
+
     useEffect(() => {
         proxyfetch("https://piston-meta.mojang.com/mc/game/version_manifest.json")
             .then(res => res.json())
@@ -51,32 +51,31 @@ export function Resourcepack() {
                 // TODO: Implement error popup
             });
     }, []);
-        
+
     const versionSelectorData = loading ? [{
-        id: "loading", 
+        id: "loading",
         title: "Loading...",
     }] : versions.map(version => ({
-        id: version.id, 
+        id: version.id,
         title: version.id
     }));
-    
+
     return (
         <Box width={80} height={50} background={Color.Gray} text={Color.White} borderColor={Color.Black} border padded scrollable>
             <Box width={20} />
             <Box width={34}>
                 <pre>
-                    &nbsp;_   _         _____       _____   <br/>
-                         | | | |       | ___ \     |_   _|  <br/>
-                         | | | |       | |_/ /       | |    <br/>
-                         | | | |       |  __/        | |    <br/>
-                         \ \_/ /       | |           | |    <br/>
-                    &nbsp;\___/ anilla \_|udding     \_/art <br/>
+                    &nbsp;_   _         _____       _____   <br />
+                    | | | |       | ___ \     |_   _|  <br />
+                    | | | |       | |_/ /       | |    <br />
+                    | | | |       |  __/        | |    <br />
+                    \ \_/ /       | |           | |    <br />
+                    &nbsp;\___/ anilla \_|udding     \_/art <br />
                     <br />
                     &nbsp;     Resourcepack generator
                 </pre>
             </Box>
-            <Box width={21} height={11} />
-            <br />
+            <Box width={21} height={12} />
             <span><u>Steps:</u></span><br />
             <br />
             <span>1.) Download the jar file for the version you want to use (leave it on the latest version unless you have any specific reason not to)</span><br />
@@ -92,43 +91,52 @@ export function Resourcepack() {
             }} />
             <br />
             <br />
-            
-                <span>2.) Select the file you just downloaded (ending in a jar):</span><br />
+
+            <span>2.) Select the file you just downloaded (ending in .jar, usually named client.jar), if nothing got downloaded when you pressed the button above, use the file from <a href="https://piston-data.mojang.com/v1/objects/958928a560c9167687bea0cefeb7375da1e552a8/client.jar">here</a>:</span><br />
+            <br />
+            <label htmlFor="jar-selector">Select the jar file: </label><br /><br />
+            <FileSelector id="jar-selector" extension="jar" onSelect={setSelectedJar} /><br />
+            <br />
+            <br />
+            <span>3.) Select the resourcepack you wish to apply on top of the vanilla assets. This is *NOT* the file you downloaded from my patreon, this is separate.</span><br />
+            <br />
+            <label htmlFor="file-selector">Select resourcepack: </label><br /><br />
+            <FileSelector id="file-selector" extension="zip" onSelect={setSelectedFile} /><br />
+            <br />
+            <Box width={75} height={7} background={Color.Purple} border padded borderColor={Color.Black}>
+                <span>3.5) (Optional) Select your skin:</span><br />
                 <br />
-                <label htmlFor="jar-selector">Select jar file: </label><br /><br />
-                <FileSelector id="jar-selector" extension="jar" onSelect={setSelectedJar} /><br />
-                <br />
-                <br />
-                <span>3.) Select the resourcepack you wish to apply on top of the vanilla assets</span><br />
-                <br />
-                <label htmlFor="file-selector">Select resourcepack: </label><br /><br />
-                <FileSelector id="file-selector" extension="zip" onSelect={setSelectedFile} /><br />
-                <br />
-                <Box width={75} height={7} background={Color.Purple} border padded borderColor={Color.Black}>
-                    <span>3.5) (Optional) Select your skin:</span><br />
-                    <br />
-                    <FileSelector id="skin-selector" extension="png" onSelect={setSelectedSkin} />
-                </Box>
-                <br />
-                <br />
-                <Box width={75} height={1} />
-                <span>4.) Generate the resourcepack</span><br />
-                <br />
-                <Button 
-                    onClick={() => {
-                        if (selectedJar && selectedFile)
-                            generateResourcepack(selectedJar, selectedFile, selectedSkin, setMessage, setProgress);
-                    }} title="Generate pack" /><br />
-                <br />
-                <span>Current task: {message}</span><br />
-                <br />
-                <ProgressBar progress={progress} width={75}/>
-                <br />
-                <br />
-                <span>5.) Load the downloaded resourcepack ON TOP of VanillaPuddingTart</span><br />
-                <br />
-                <span style={{color: "var(--navy)"}} className="noshadow">Don't share the generated file with anyone unless you have explicit permission!</span><br />
-                <br />
+                <FileSelector id="skin-selector" extension="png" onSelect={setSelectedSkin} />
+            </Box>
+            <br />
+            <br />
+            <Box width={75} height={1} />
+            <span>4.) Generate the resourcepack</span><br />
+            <br />
+            <Button
+                onClick={() => {
+                    if (!selectedJar) {
+                        setMessage("You need to select the jar file in step 2!");
+                        return;
+                    }
+
+                    if (!selectedFile) {
+                        setMessage("You need to select a resourcepack in step 3!")
+                        return;
+                    }
+
+                    generateResourcepack(selectedJar, selectedFile, selectedSkin, setMessage, setProgress);
+                }} title="Generate pack" /><br />
+            <br />
+            <span>Current task: {message}</span><br />
+            <br />
+            <ProgressBar progress={progress} width={75} />
+            <br />
+            <br />
+            <span>5.) Load the downloaded resourcepack ON TOP of VanillaPuddingTart. The output only works with versions newer than 1.2.0. Older versions are unsupported.</span><br />
+            <br />
+            <span style={{ color: "var(--navy)" }} className="noshadow">Don't share the generated file with anyone unless you have explicit permission!</span><br />
+            <br />
         </Box>
-    )
+    );
 }
