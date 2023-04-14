@@ -495,10 +495,10 @@ export function simplifyModel(model: Model) {
     const newTextures: { [key: string]: string; } = {};
     const mapping = new Map<string, string>();
     for (let key in model.textures) {
-        if (key === "particle")
-            continue;
-        
         let texturePath = model.textures[key];
+        if (!texturePath)
+            continue;
+
         while (texturePath.startsWith("#")) {
             texturePath = model.textures[texturePath.replace("#", "")];
         }
