@@ -37,11 +37,11 @@ async function waitForImageLoad(img: HTMLImageElement): Promise<null> {
     });
 }
 
-function get(atlas: boolean[], x: number, y: number) {
+function isCellOccupied(atlas: boolean[], x: number, y: number) {
     return atlas[x + y * ATLAS_GRID_SIZE] ?? false;
 }
 
-function set(atlas: boolean[], x: number, y: number) {
+function setCellOccupied(atlas: boolean[], x: number, y: number) {
     atlas[x + y * ATLAS_GRID_SIZE] = true;
 }
 
@@ -56,7 +56,7 @@ function findPlaceInAtlas(atlas: boolean[], textureCount: number, size: number):
             for (let dx = 0; dx < cellWidth; dx++) {
                 let foundY = true;
                 for (let dy = 0; dy < cellHeight; dy++) {
-                    if (get(atlas, x + dx, y + dy)) {
+                    if (isCellOccupied(atlas, x + dx, y + dy)) {
                         foundY = false;
                         break;
                     }
@@ -69,7 +69,7 @@ function findPlaceInAtlas(atlas: boolean[], textureCount: number, size: number):
             if (foundX) {
                 for (let dx = 0; dx < cellWidth; dx++) {
                     for (let dy = 0; dy < cellHeight; dy++) {
-                        set(atlas, x + dx, y + dy);
+                        setCellOccupied(atlas, x + dx, y + dy);
                     }
                 }
                 return [x, y];
@@ -94,7 +94,7 @@ function createDataTexture(x: number, y: number, size: number, zip: JSZip, block
     ctx.fillRect(1, 0, 1, 1);
     return new Promise(resolve => {
         canvas.toBlob(blob => {
-            zip.file(`assets/minecraft/textures/block/${block}_data.png`, blob?.arrayBuffer()!!, { binary: true });
+            zip.file(`assets/minecraft/textures/block/${block}_data_.png`, blob?.arrayBuffer()!!, { binary: true });
             resolve(true);
         });
     });
@@ -391,7 +391,7 @@ export async function generateResourcepack(jar: File, file: File, skin: File | n
             console.error(`Failed to merge model file for ${blockData.name}`);
             continue;
         }
-        model.textures["marker"] = `minecraft:block/${blockData.name}_data`;
+        model.textures["marker"] = `minecraft:block/${blockData.name}_data_`;
         model.elements.push({
             from: [1, 1, 1],
             to: [15, 15, 15],
