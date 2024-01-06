@@ -1,0 +1,81 @@
+---
+import Centered from "@components/Centered.astro";
+import Container from "@components/Container.astro";
+import Photo from "@components/Photo.astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import Text from "@components/Text.astro";
+import ListElement from "@components/ListElement.astro";
+---
+<BaseLayout>
+    <Container class="w-full h-full" innerClass="h-full flex flex-col">
+        <Container>
+            <Centered>
+                <Text>
+                    <h1>
+                        <pre
+                            class="font-sans">
+  _   _                      
+ | | | | ___  _ __ ___   ___ 
+ | |_| |/ _ \| '_ ` _ \ / _ \
+ |  _  | (_) | | | | | |  __/
+ |_| |_|\___/|_| |_| |_|\___|</pre>
+                    </h1>
+                </Text>
+            </Centered>
+        </Container>
+        <Container
+            class="grow overflow-y-hidden w-full basis-1"
+            innerClass="flex flex-col md:flex-row px-4 py-6 gap-4"
+            border
+            scrollable
+        >
+            <Container class="grow basis-1">
+                <Centered>
+                    <Photo />
+                </Centered>
+            </Container>
+            <Container class="grow basis-1">
+                <Text>
+                    <p>Hi!</p>
+                    <br />
+                    <p>
+                        My name is Bálint, welcome to my webpage. The lifelike
+                        photograph in incredible 39x26 resolution (subpixels are
+                        for the weak) and 4 bit color on the left is me.
+                    </p>
+                    <br />
+                    <p>
+                        I work as a professional and hobbyist software
+                        developer, mainly on the web.
+                    </p>
+                    <br />
+                    <br />
+                    <h2>Navigation:</h2>
+                    <ListElement>
+                        If you're interested in hiring me or you want to find
+                        out more about my background, you can do so on
+                        the About page.
+                    </ListElement>
+                    <ListElement>
+                        If you want to see some of my projects, check out the
+                        Projects page.
+                    </ListElement>
+                    <ListElement>
+                        I have a blog, you can get there through the Blog link.
+                    </ListElement>
+                    <ListElement>
+                        The source code of this site is available on GitHub
+                        through the Source nav link.
+                    </ListElement>
+                </Text>
+            </Container>
+        </Container>
+    </Container>
+    <script>
+        const urlParam = window.location.hash;
+        if (urlParam) {
+            const newUrl = urlParam.replace("#", "");
+            window.location.href = `/${newUrl}`;
+        }
+    </script>
+</BaseLayout>

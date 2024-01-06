@@ -1,11 +1,22 @@
 import JSZip from "jszip";
 import { waitForReader } from "../promises";
 import { Atlas } from "./atlas";
-import { FileRef, readFile } from "./file";
-import { Face, Model, createDataTexture, disableShading, encodeModel, simplifyModel } from "./model";
-import { Multipart, convertMultipartToVariant } from './multipart';
-import { Variants, applyReferences } from './variants';
-import { ImageData, encode } from "fast-png";
+import { readFile } from "./file";
+import type { FileRef } from "./file";
+import {
+    Face,
+    createDataTexture,
+    disableShading,
+    encodeModel,
+    simplifyModel,
+} from "./model";
+import type { Model } from "./model";
+import { convertMultipartToVariant } from "./multipart";
+import type { Multipart } from "./multipart";
+import { applyReferences } from "./variants";
+import type { Variants } from "./variants";
+import { encode } from "fast-png";
+import type { ImageData } from "fast-png";
 
 const models = new Map<string, FileRef<Model>>();
 const generatedModels = new Map<string, FileRef<Model>>();
@@ -15,8 +26,9 @@ async function collectModels(zip: JSZip) {
     const promises: Promise<any>[] = [];
     zip.folder("assets/minecraft/models/block")?.forEach((path, file) => {
         const name = path.replace(".json", "");
-        promises.push(readFile<Model>(file, name)
-            .then(model => models.set(name, model)));
+        promises.push(
+            readFile<Model>(file, name).then((model) => models.set(name, model))
+        );
     });
     await Promise.all(promises);
 }
@@ -24,17 +36,23 @@ async function collectModels(zip: JSZip) {
 async function collectVariants(zip: JSZip) {
     const files: FileRef<Multipart | Variants>[] = [];
     const promises: Promise<any>[] = [];
-    zip.folder("assets/minecraft/blockstates")
-        ?.forEach((path, file) => {
-            promises.push(readFile<Multipart | Variants>(file, path.replace(".json", ""))
-                .then(file => files.push(file)));
-        });
+    zip.folder("assets/minecraft/blockstates")?.forEach((path, file) => {
+        promises.push(
+            readFile<Multipart | Variants>(
+                file,
+                path.replace(".json", "")
+            ).then((file) => files.push(file))
+        );
+    });
 
     await Promise.all(promises);
 
-    files.forEach(file => {
+    files.forEach((file) => {
         if ("multipart" in file.data) {
-            variants.set(file.name, convertMultipartToVariant(file as FileRef<Multipart>, models));
+            variants.set(
+                file.name,
+                convertMultipartToVariant(file as FileRef<Multipart>, models)
+            );
             return;
         }
 
@@ -42,7 +60,12 @@ async function collectVariants(zip: JSZip) {
     });
 }
 
-export async function newGenerateResourcepack(jar: File, zip: File, skin: File | null, setMessage: (msg: string) => void, setProgress: (progress: number) => void) {
+export async function generateResourcepack(
+    jar: File,
+    zip: File,
+    setMessage: (msg: string) => void,
+    setProgress: (progress: number) => void
+) {
     let counter = 0;
     const rpName = zip.name.replace(".zip", "");
 
@@ -60,12 +83,14 @@ export async function newGenerateResourcepack(jar: File, zip: File, skin: File |
     const output = resourcepackZip;
 
     setMessage("Replacing pack.mcmeta...");
-    const originalMcmeta = JSON.parse(await resourcepackZip.file("pack.mcmeta")!.async("text"));
+    const originalMcmeta = JSON.parse(
+        await resourcepackZip.file("pack.mcmeta")!.async("text")
+    );
     const mcmeta = {
         pack: {
             pack_format: originalMcmeta.pack.pack_format,
-            description: "VanillaPuddingTart - " + rpName
-        }
+            description: "VanillaPuddingTart - " + rpName,
+        },
     };
     output.file("pack.mcmeta", JSON.stringify(mcmeta));
 
@@ -85,55 +110,68 @@ export async function newGenerateResourcepack(jar: File, zip: File, skin: File |
     setMessage("Applying references...");
 
     counter = 0;
-    variants.forEach(variantFile => {
-        setProgress(++counter / variants.size)
+    variants.forEach((variantFile) => {
+        setProgress(++counter / variants.size);
         return applyReferences(variantFile, models, generatedModels);
     });
 
     setMessage("Applying changes to models...");
 
     const newModels = [...generatedModels.values()];
-    newModels.forEach(model => simplifyModel(model.data));
-    newModels.forEach(model => disableShading(model.data));
+    newModels.forEach((model) => simplifyModel(model.data));
+    newModels.forEach((model) => disableShading(model.data));
 
     setMessage("Saving blockstates...");
 
     counter = 0;
-    variants.forEach(variantFile => {
+    variants.forEach((variantFile) => {
         setProgress(++counter / variants.size);
-        output.file(`assets/minecraft/blockstates/${variantFile.name}.json`, JSON.stringify(variantFile.data));
+        output.file(
+            `assets/minecraft/blockstates/${variantFile.name}.json`,
+            JSON.stringify(variantFile.data)
+        );
     });
 
     const atlas = new Atlas();
-    const textures = new Map<string, { name: string, folder: JSZip; }>();
+    const textures = new Map<string, { name: string; folder: JSZip }>();
     const jarBlocks = jarZip.folder("assets/minecraft/textures/block");
     const rpBlocks = resourcepackZip.folder("assets/minecraft/textures/block");
 
     setMessage("Collecting textures...");
 
-    jarBlocks?.forEach(path => {
+    jarBlocks?.forEach((path) => {
         textures.set(path, { name: path, folder: jarBlocks });
     });
-    rpBlocks?.forEach(path => {
+    rpBlocks?.forEach((path) => {
         textures.set(path, { name: path, folder: rpBlocks });
     });
 
     setMessage("Generating the atlas...");
 
-    await Promise.all([...textures.values()]
-        .filter(({name, }) => name.endsWith("png") && !name.endsWith("_n.png") && !name.endsWith("_s.png"))
-        .map(async ({name, folder}, i, arr) => {
-            setProgress(i / arr.length);
-            const textureName = name.replace(".png", "");
-            await atlas.addTexture(textureName, folder);
-        }));
+    await Promise.all(
+        [...textures.values()]
+            .filter(
+                ({ name }) =>
+                    name.endsWith("png") &&
+                    !name.endsWith("_n.png") &&
+                    !name.endsWith("_s.png")
+            )
+            .map(async ({ name, folder }, i, arr) => {
+                setProgress(i / arr.length);
+                const textureName = name.replace(".png", "");
+                await atlas.addTexture(textureName, folder);
+            })
+    );
 
     atlas.generateLocations();
     const atlasData = atlas.generateAtlas();
 
     setMessage("Saving the atlas...");
 
-    output.file("assets/minecraft/textures/effect/atlas_combined.png", atlasData);
+    output.file(
+        "assets/minecraft/textures/effect/atlas_combined.png",
+        atlasData
+    );
 
     setMessage("Generating block models...");
 
@@ -141,11 +179,13 @@ export async function newGenerateResourcepack(jar: File, zip: File, skin: File |
         setProgress(i / newModels.length);
         return encodeModel(model.data, atlas);
     });
-    const maxRowLength = Math.max(...rows.map(row => row.length));
+    const maxRowLength = Math.max(...rows.map((row) => row.length));
 
     setMessage("Saving block models...");
-    
-    const data = rows.map(row => [...row, ...new Array(maxRowLength - row.length).fill(0)]).flat();
+
+    const data = rows
+        .map((row) => [...row, ...new Array(maxRowLength - row.length).fill(0)])
+        .flat();
     const png: ImageData = {
         width: maxRowLength / 4,
         height: rows.length,
@@ -161,41 +201,45 @@ export async function newGenerateResourcepack(jar: File, zip: File, skin: File |
     newModels.forEach((model, i) => {
         setProgress(i / newModels.length);
         model.data.textures["marker"] = `minecraft:block/${model.name}_data__`;
-        model.data.elements?.push(
-            {
-                from: [7, 7, 7],
-                to: [9, 9, 9],
-                faces: {
-                    [Face.up]: {
-                        texture: "#marker",
-                        uv: [2, 2, 4, 4],
-                        tintindex: 0,
-                    },
-                    [Face.down]: {
-                        texture: "#marker",
-                        uv: [2, 2, 4, 4],
-                        tintindex: 0,
-                    }
+        model.data.elements?.push({
+            from: [7, 7, 7],
+            to: [9, 9, 9],
+            faces: {
+                [Face.up]: {
+                    texture: "#marker",
+                    uv: [2, 2, 4, 4],
+                    tintindex: 0,
                 },
-                shade: false
-            });
-        output.file(`assets/minecraft/textures/block/${model.name}_data__.png`, createDataTexture(i));
+                [Face.down]: {
+                    texture: "#marker",
+                    uv: [2, 2, 4, 4],
+                    tintindex: 0,
+                },
+            },
+            shade: false,
+        });
+        output.file(
+            `assets/minecraft/textures/block/${model.name}_data__.png`,
+            createDataTexture(i)
+        );
     });
 
     setMessage("Saving models...");
 
     newModels.forEach((model, i) => {
         setProgress(i / newModels.length);
-        output.file(`assets/minecraft/models/block/${model.name}.json`, JSON.stringify(model.data));
+        output.file(
+            `assets/minecraft/models/block/${model.name}.json`,
+            JSON.stringify(model.data)
+        );
     });
 
-    setMessage("Done!")
+    setMessage("Done!");
 
-    output.generateAsync({ type: "blob" })
-        .then(blob => {
-            const a = document.createElement("a");
-            a.href = window.URL.createObjectURL(blob);
-            a.setAttribute("download", `VPT_${rpName}.zip`);
-            a.click();
-        });
+    output.generateAsync({ type: "blob" }).then((blob) => {
+        const a = document.createElement("a");
+        a.href = window.URL.createObjectURL(blob);
+        a.setAttribute("download", `VPT_${rpName}.zip`);
+        a.click();
+    });
 }

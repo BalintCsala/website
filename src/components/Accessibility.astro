@@ -1,0 +1,64 @@
+---
+import Text from "./Text.astro";
+---
+
+<div
+    class="z-10 overflow-hidden accessibility absolute top-0 left-0 h-6 bg-navy text-white px-4"
+>
+    <Text>
+        <p>Accessibility</p>
+    </Text>
+    <br />
+    <button data-access="scanlines" class="w-full text-left">
+        <span class="marker">X</span>
+        <Text>Scanlines</Text>
+    </button>
+    <br />
+    <button data-access="cursor" class="w-full text-left">
+        <span class="marker">X</span>
+        <Text>Block cursor</Text>
+    </button>
+    <br />
+    <button data-access="bleed" class="w-full text-left">
+        <span class="marker">X</span>
+        <Text>Color bleed</Text>
+    </button>
+</div>
+<style>
+    .accessibility:hover {
+        animation: hover-effect 0.3s steps(4) forwards;
+    }
+
+    @keyframes hover-effect {
+        from {
+            height: 1.5rem;
+        }
+        to {
+            height: 7.5rem;
+        }
+    }
+</style>
+<script>
+    function manageSetting(name: string) {
+        if (!localStorage) return;
+        if (localStorage.getItem(name) === null)
+            localStorage.setItem(name, "true");
+
+        let value = localStorage.getItem(name) === "true";
+        const button = document.querySelector(`[data-access="${name}"]`)!;
+        const marker = button.querySelector(".marker")!;
+        marker.innerHTML = value ? "X" : "O";
+        button.addEventListener("click", () => {
+            value = !value;
+            localStorage.setItem(name, value.toString());
+            marker.innerHTML = value ? "X" : "O";
+
+            const event = new CustomEvent("accessibilitychange");
+            window.dispatchEvent(event);
+        });
+    }
+
+    manageSetting("scanlines");
+    manageSetting("cursor");
+    manageSetting("bleed");
+</script>

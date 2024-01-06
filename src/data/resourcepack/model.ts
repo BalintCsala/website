@@ -1,5 +1,6 @@
-import { encode, ImageData } from "fast-png";
-import { FileRef } from "./file";
+import { encode } from "fast-png";
+import type { ImageData } from "fast-png";
+import type { FileRef } from "./file";
 import { Atlas, encodeLocation } from './atlas';
 import { Vector3 } from '@math.gl/core';
 
@@ -154,7 +155,7 @@ export function encodeModel(model: Model, atlas: Atlas): number[] {
             if (!model.textures[textureName])
                 return; // Missing texture
 
-            const textureLocation = atlas.locations.get(model.textures[textureName].replace(/(minecraft:)?(block\/)?/, ""))!;
+            const textureLocation = atlas.locations.get(model.textures[textureName]!.replace(/(minecraft:)?(block\/)?/, ""))!;
             res.push(...encodeLocation(textureLocation));
             res.push(...(element.faces[face as Face]?.uv!).map(x => Math.round(x / 16.0 * 255)));
         });
@@ -368,8 +369,8 @@ export function getAbsoluteModel(model: Model, models: Map<string, FileRef<Model
 
         const parent = models.get(parentName)!.data;
         result.textures = { ...parent.textures, ...result.textures };
-        result.elements = parent.elements;
-        result.parent = parent.parent;
+        result.elements = parent.elements!;
+        result.parent = parent.parent!;
     }
 
     return result;
@@ -450,14 +451,14 @@ function renameTextures(model: Model, suffix: string) {
     const result = JSON.parse(JSON.stringify(model)) as Model;
 
     for (let key in result.textures) {
-        if (result.textures[key].startsWith("#") && !result.textures[key].endsWith("__")) {
+        if (result.textures[key]!.startsWith("#") && !result.textures[key]!.endsWith("__")) {
             result.textures[key] += suffix;
         }
 
         if (key === "particle")
             continue;
 
-        result.textures[key + suffix] = result.textures[key];
+        result.textures[key + suffix] = result.textures[key]!;
         delete result.textures[key];
     }
 
@@ -481,9 +482,12 @@ function renameTextures(model: Model, suffix: string) {
 export function mergeModels(models: Model[]) {
     let renamedModels = models.map((model, i) => renameTextures(model, `_part${i}__`));
     const result = renamedModels[0];
+    if (!result) {
+        return result!;
+    }
     for (let i = 1; i < renamedModels.length; i++) {
-        result.textures = { ...renamedModels[i].textures, ...result.textures };
-        result.elements = [...(result.elements ?? []), ...(renamedModels[i].elements ?? [])];
+        result.textures = { ...renamedModels[i]!.textures, ...result.textures };
+        result.elements = [...(result.elements ?? []), ...(renamedModels[i]!.elements ?? [])];
     }
 
     return result;

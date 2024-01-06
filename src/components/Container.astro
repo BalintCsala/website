@@ -1,0 +1,154 @@
+---
+import { twMerge } from "tailwind-merge";
+
+interface Props {
+    border?: boolean;
+    class?: string;
+    innerClass?: string;
+    scrollable?: boolean;
+}
+const { border, class: className, innerClass, scrollable } = Astro.props;
+---
+
+<div
+    class={twMerge(
+        "container-element relative",
+        border ? "px-4 py-6" : "",
+        className ?? "",
+    )}
+    data-scrollable={scrollable ? "true" : "false"}
+>
+    {
+        border && (
+            <div class="borders">
+                <span class="select-none break-words absolute top-0 left-0 right-0 h-6" />
+                <span class="select-none break-words absolute bottom-0 left-0 right-0 h-6" />
+                <span class="select-none break-words absolute top-6 left-0 bottom-6 w-4" />
+                <span class="select-none break-words absolute top-6 right-0 bottom-6 w-4" />
+            </div>
+        )
+    }
+    <div
+        class={twMerge(
+            "container-child",
+            scrollable
+                ? "absolute top-6 bottom-6 left-4 right-4 overflow-y-scroll"
+                : "",
+            innerClass ?? "",
+        )}
+    >
+        <slot />
+    </div>
+</div>
+<style>
+    .container-child::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .container-child {
+        scrollbar-width: none;
+    }
+</style>
+<script>
+    type Container = {
+        element: HTMLElement;
+        borders: HTMLSpanElement[];
+        child: HTMLElement;
+        scrollable: boolean;
+    };
+
+    const containers = [...document.querySelectorAll(".container-element")]
+        .map((element) => ({
+            element,
+            borders: [
+                ...element.querySelectorAll(".borders > span"),
+            ] as HTMLSpanElement[],
+            child: element.querySelector(".container-child")!,
+        }))
+        .filter(({ borders }) => borders.length > 0) as Container[];
+
+    function fill(
+        span: HTMLSpanElement,
+        direction: "vertical" | "horizontal",
+        fontSize: number,
+    ) {
+        const { width, height } = span.getBoundingClientRect();
+        let requiredChars: number;
+        let char: string;
+        if (direction === "vertical") {
+            requiredChars = Math.floor(height / fontSize / 1.5);
+            char = "|";
+            span.innerText = ` ${char.repeat(requiredChars)} `;
+        } else {
+            requiredChars = Math.floor(width / fontSize);
+            char = "-";
+            span.innerText = `+${char.repeat(requiredChars - 2)}+`;
+        }
+    }
+
+    function scrollBar(
+        span: HTMLSpanElement,
+        fontSize: number,
+        parentHeight: number,
+        scrollHeight: number,
+        scrollOffset: number,
+    ) {
+        const availableChars =
+            span.getBoundingClientRect().height / fontSize / 1.5;
+        const barPercentage = parentHeight / scrollHeight;
+        const barCharCount = Math.floor(barPercentage * availableChars);
+        let scrollPercentage = scrollOffset / (scrollHeight - parentHeight);
+        if (scrollPercentage > 0.98) {
+            scrollPercentage = 1;
+        }
+        const leadingCharCount = Math.floor(scrollPercentage * (availableChars - barCharCount));
+        span.innerText =
+            "|".repeat(leadingCharCount) +
+            "#".repeat(barCharCount) +
+            "|".repeat(availableChars - leadingCharCount - barCharCount);
+    }
+
+    function updateContainer(container: Container, fontSize: number) {
+        fill(container.borders[0]!, "horizontal", fontSize);
+        fill(container.borders[1]!, "horizontal", fontSize);
+        fill(container.borders[2]!, "vertical", fontSize);
+
+        const containerSize = container.element.getBoundingClientRect();
+        const scrollHeight = container.child.scrollHeight;
+        const containerHeight = containerSize.height - fontSize * 1.5 * 2;
+        if (container.element.dataset.scrollable === "true" && containerHeight < scrollHeight) {
+            container.borders[3]!.innerText = "";
+            scrollBar(
+                container.borders[3]!,
+                fontSize,
+                containerHeight,
+                scrollHeight,
+                container.child.scrollTop,
+            );
+        } else {
+            fill(container.borders[3]!, "vertical", fontSize);
+        }
+    }
+
+    function onResize() {
+        const fontSize = parseFloat(
+            getComputedStyle(document.documentElement).fontSize,
+        );
+        containers.forEach((container) => {
+            updateContainer(container, fontSize);
+        });
+    }
+
+    document.fonts.addEventListener("loadingdone", onResize);
+    window.addEventListener("resize", onResize);
+    containers.forEach((container) => {
+        if (container.element.dataset.scrollable === "true") {
+            container.child.addEventListener("scroll", () => {
+                const fontSize = parseFloat(
+                    getComputedStyle(document.documentElement).fontSize,
+                );
+                updateContainer(container, fontSize);
+            });
+        }
+    });
+</script>

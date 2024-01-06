@@ -1,0 +1,18 @@
+---
+import Container from "@components/Container.astro";
+import NavButton from "./NavButton.astro";
+import Centered from "@components/Centered.astro";
+---
+
+<nav class="bg-blue px-4">
+    <Container>&nbsp;</Container>
+    <Centered>
+        <div class="flex gap-4">
+            <NavButton path="/">Home</NavButton>
+            <NavButton path="/about">About</NavButton>
+            <NavButton path="/projects">Projects</NavButton>
+            <NavButton path="https://blog.balintcsala.com">Blog</NavButton>
+            <NavButton path="https://github.com/BalintCsala/website">Source</NavButton>
+        </div>
+    </Centered>
+</nav>

@@ -1,0 +1,69 @@
+---
+import Container from "@components/Container.astro";
+import Centered from "@components/Centered.astro";
+import Navigation from "@components/Navigation/Navigation.astro";
+import Text from "@components/Text.astro";
+import CursorSimulator from "@components/effects/CursorSimulator.astro";
+import Accessibility from "@components/Accessibility.astro";
+import Scanlines from "@components/effects/Scanlines.astro";
+
+const year = new Date().getFullYear();
+---
+
+<html lang="en" class="h-full">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Bálint's website</title>
+        <style is:global>
+            @font-face {
+                font-family: BIOS;
+                src: url("/font.woff");
+            }
+
+            html.block-cursor * {
+                cursor: none !important;
+            }
+
+            document {
+                font-size: 0.6rem;
+            }
+        </style>
+        <script>
+            function onResize() {
+                const columns = innerWidth > 768 ? 80 : 50;
+                const rows = innerWidth > 768 ? 60 : 80;
+                const size = Math.min(
+                    Math.floor(window.innerWidth / columns),
+                    Math.floor(window.innerHeight / rows)
+                );
+                document.documentElement.style.fontSize = `${size}px`;
+            }
+            onResize();
+            window.addEventListener("resize", onResize);
+        </script>
+    </head>
+    <body
+        class="overflow-x-hidden bg-black flex justify-center items-center h-full"
+    >
+        <div class="bg-gray w-[50rem] md:w-[80rem] h-[80rem] md:h-[60rem] flex flex-col">
+            <Scanlines />
+            <CursorSimulator />
+            <Container class="bg-teal text-white px-4 py-6">
+                <Centered>
+                    <Text>
+                        Bálint Csala - Copyright {year};
+                    </Text>
+                </Centered>
+            </Container>
+            <Navigation />
+            <Container class="grow" innerClass="h-full w-full absolute">
+                <Accessibility />
+                <main class="w-full h-full">
+                    <slot />
+                </main>
+            </Container>
+        </div>
+    </body>
+</html>

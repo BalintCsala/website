@@ -1,4 +1,6 @@
-import { DecodedPng, decode, encode } from "fast-png";
+import { decode, encode } from "fast-png";
+import type { DecodedPng } from "fast-png";
+
 import JSZip from 'jszip';
 
 const MIN_TEXTURE_SIZE = 16;
@@ -46,7 +48,7 @@ export class Atlas {
             width: image.width,
             height: image.height,
             data: new Uint8Array(
-                new Array(image.width * image.height * 4).fill(0).map((_, i) => i % 4 === 3 ? 255 : image.data[Math.floor(i / 4) * 3 + i % 4])
+                new Array(image.width * image.height * 4).fill(0).map((_, i) => i % 4 === 3 ? 255 : image.data[Math.floor(i / 4) * 3 + i % 4]!)
             )
         };
     }
@@ -65,7 +67,7 @@ export class Atlas {
                 width: albedo.width,
                 height: albedo.height,
                 data: new Uint8Array(
-                    new Array(albedo.width * albedo.height * 4).fill(0).map((_, i) => [127, 127, 255, 255][i % 4])
+                    new Array(albedo.width * albedo.height * 4).fill(0).map((_, i) => [127, 127, 255, 255][i % 4]!)
                 )
             };
         }
@@ -78,7 +80,7 @@ export class Atlas {
                 width: albedo.width,
                 height: albedo.height,
                 data: new Uint8Array(
-                    new Array(albedo.width * albedo.height * 4).fill(0).map((_, i) => [0, 10, 0, 255][i % 4])
+                    new Array(albedo.width * albedo.height * 4).fill(0).map((_, i) => [0, 10, 0, 255][i % 4]!)
                 )
             };
         }
@@ -160,9 +162,9 @@ export class Atlas {
                         const specularIndex = (x + locX + (y + locY + this.height) * this.width * 2) * 4 + i;
 
                         const textureIndex = (x + y * texture.size) * 4 + i;
-                        atlas[albedoIndex] = texture.albedo.data[textureIndex];
-                        atlas[normalIndex] = texture.normal.data[textureIndex];
-                        atlas[specularIndex] = texture.specular.data[textureIndex];
+                        atlas[albedoIndex] = texture.albedo.data[textureIndex]!;
+                        atlas[normalIndex] = texture.normal.data[textureIndex]!;
+                        atlas[specularIndex] = texture.specular.data[textureIndex]!;
                     }
                 }
             }

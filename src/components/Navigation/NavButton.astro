@@ -1,0 +1,22 @@
+---
+import Text from '@components/Text.astro';
+interface Props {
+    path: string;
+}
+
+const { path } = Astro.props;
+const currentPath = Astro.url.pathname;
+const active = currentPath === path;
+---
+
+<a
+    href={path}
+    class={`${
+        active ? "bg-gray" : "bg-purple"
+    } text-white px-4 hover:bg-magenta m-0`}
+    target={path.startsWith("http") ? "_blank" : ""}
+>
+    <Text>
+        <slot />
+    </Text>
+</a>

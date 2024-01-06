@@ -1,0 +1,38 @@
+---
+
+---
+
+<div class="hidden z-50 pointer-events-none cursor w-4 h-6 absolute backdrop-invert">
+</div>
+<script>
+    const cursor = document.querySelector(".cursor")! as HTMLDivElement;
+
+    function handleCursor() {
+        const enabled = localStorage.getItem("cursor") === "true";
+        if (
+            enabled &&
+            !document.documentElement.classList.contains("block-cursor")
+        ) {
+            document.documentElement.classList.add("block-cursor");
+        } else if (
+            !enabled &&
+            document.documentElement.classList.contains("block-cursor")
+        ) {
+            document.documentElement.classList.remove("block-cursor");
+        }
+        cursor.style.display = enabled ? "block" : "none";
+    }
+    addEventListener("mousemove", (e) => {
+        const { width, height } = cursor.getBoundingClientRect();
+        const area = cursor.parentElement?.getBoundingClientRect()!;
+        const posX =
+            Math.floor((e.pageX - area.left) / width) * width + area.left;
+        const posY =
+            Math.floor((e.pageY - area.top) / height) * height + area.top;
+        cursor.style.left = `${posX}px`;
+        cursor.style.top = `${posY}px`;
+    });
+
+    handleCursor();
+    window.addEventListener("accessibilitychange", handleCursor);
+</script>

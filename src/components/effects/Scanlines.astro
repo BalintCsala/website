@@ -1,0 +1,21 @@
+---
+
+---
+
+<div
+    class="hidden scanlines z-40 fixed top-0 left-0 pointer-events-none bg-gradient-to-b bg-repeat-y bg-[length:100%_2px] from-[rgba(0,0,0,0.3)] to-[rgba(0,0,0,0.0)] w-full h-full from-50% to-50%"
+>
+</div>
+<script>
+    const element = document.querySelector(".scanlines")! as HTMLDivElement;
+
+    function handleScanlines() {
+        let enabled = localStorage?.getItem("scanlines") === "true";
+        element.style.display = enabled ? "block" : "none";
+    }
+
+    handleScanlines();
+    window.addEventListener("accessibilitychange", () => {
+        handleScanlines();
+    });
+</script>

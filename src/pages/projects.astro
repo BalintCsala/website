@@ -1,0 +1,64 @@
+---
+import Centered from "@components/Centered.astro";
+import Container from "@components/Container.astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import Text from "@components/Text.astro";
+import ListElement from "@components/ListElement.astro";
+import Link from "@components/Link.astro";
+---
+
+<BaseLayout>
+    <Container class="h-full" innerClass="flex flex-col h-full">
+        <Centered>
+            <Text>
+                <h1>
+                    <pre
+                        class="font-sans">
+  ____            _           _       
+ |  _ \ _ __ ___ (_) ___  ___| |_ ___ 
+ | |_) | '__/ _ \| |/ _ \/ __| __/ __|
+ |  __/| | | (_) | |  __/ (__| |_\__ \
+ |_|   |_|  \___// |\___|\___|\__|___/
+               |__/</pre>
+                </h1>
+            </Text>
+        </Centered>
+        <Container
+            class="grow"
+            innerClass="flex flex-col-reverse md:flex-row px-4 py-6"
+            border
+            scrollable
+        >
+            <Text>
+                <h1>Graphics development:</h1>
+                <ListElement>
+                    <Link url="szakdoga.balintcsala.com">WebGPU cone tracer</Link>
+                    (requires a WebGPU capable browser)
+                </ListElement>
+                <ListElement>
+                    <Link url="https://github.com/BalintCsala/VanillaPuddingTart">
+                        Vanilla minecraft shader
+                    </Link>
+                </ListElement>
+                <ListElement>
+                    <Link url="https://github.com/BalintCsala/VulkaniteDemoPack">
+                        A minecraft shader capable of utilizing hardware RT cores
+                    </Link>
+                </ListElement>
+                <br />
+                <h1>Web development</h1>
+                <ListElement>
+                    <Link url="https://editor.balintcsala.com">
+                        A third-party setting editor for optifine shaders
+                    </Link>
+                </ListElement>
+                <ListElement>
+                    <Link url="https://github.com/BalintCsala/balintcsala.com">This website</Link> (Written with Astro JS)
+                </ListElement>
+                <ListElement>
+                    <Link url="https://blog.balintcsala.com">My blog</Link> (Written with Astro JS)
+                </ListElement>
+            </Text>
+        </Container>
+    </Container>
+</BaseLayout>

@@ -1,0 +1,33 @@
+---
+interface Props {
+    class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<div class={`centered ${className}`}>
+    <div class="w-fit">
+        <slot />
+    </div>
+</div>
+<script>
+    const centeredElements = document.querySelectorAll(".centered");
+    const onResize = () => {
+        const fontSize = parseInt(
+            window.getComputedStyle(document.body).fontSize,
+        );
+        centeredElements.forEach((element) => {
+            const child = element.children[0] as HTMLSpanElement;
+            const requiredChars =
+                child.getBoundingClientRect().width / fontSize;
+            const availableSpace =
+                element.getBoundingClientRect().width / fontSize;
+            child.style.marginLeft = `${
+                Math.floor((availableSpace - requiredChars) / 2)
+            }em`;
+        });
+    };
+
+    window.addEventListener("resize", onResize);
+    document.fonts.addEventListener("loadingdone", onResize);
+</script>

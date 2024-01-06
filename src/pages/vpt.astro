@@ -1,0 +1,198 @@
+---
+import Centered from "@components/Centered.astro";
+import Container from "@components/Container.astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import Text from "@components/Text.astro";
+import Button from "@components/Button.astro";
+import Link from "@components/Link.astro";
+---
+<BaseLayout>
+    <Container class="h-full" innerClass="flex flex-col h-full">
+        <Centered>
+            <Text>
+                <h1>
+                    <pre
+                        class="font-sans">
+ __     ______ _____ 
+ \ \   / /  _ \_   _|
+  \ \ / /| |_) || |  
+   \ V / |  __/ | |  
+    \_/  |_|    |_|</pre>
+                </h1>
+                <h2>Resourcepack generator</h2>
+            </Text>
+        </Centered>
+        <Container
+            class="grow overflow-y-hidden w-full basis-1"
+            innerClass="flex flex-col-reverse md:flex-row px-4 py-6"
+            border
+            scrollable
+        >
+            <Text>
+                <h3>Steps:</h3>
+                <br />
+                <p>
+                    1.)  Download the jar file for the version you want to use (leave it on the latest version unless you have any specific reason not to)
+                </p>
+                <br />
+                Select version:
+                <select id="version-selector" class="bg-teal">
+                    <option selected>Loading...</option>
+                </select>   
+                <br />
+                <br />
+                <Button id="download-version">
+                    <Text>
+                        Download version
+                    </Text>
+                </Button>
+                <br />
+                <br />
+                <p>
+                    2.) Select the file you just downloaded (ending in .jar, usually named client.jar), if nothing got downloaded when you pressed the button above, use the file from <Link url="https://piston-data.mojang.com/v1/objects/958928a560c9167687bea0cefeb7375da1e552a8/client.jar">here</Link>: 
+                </p>
+                <br />
+                <input type="file" id="client-jar-input" accept=".jar" class="hidden" />
+                <button id="client-jar-front" class="bg-teal h-6 inline-block">Click here to select a file...</button>
+                <br />
+                <br />
+                <p>
+                    3.) Select the resourcepack you wish to apply on top of the vanilla assets. This is *NOT* the file you downloaded from my patreon or from modrinth, this is separate.
+                </p>
+                <br />
+                <input type="file" id="resourcepack-input" accept=".zip" class="hidden" />
+                <button id="resourcepack-front" class="bg-teal h-6 inline-block">Click here to select a file...</button>
+                <br />
+                <br />
+                <Container class="bg-purple" innerClass="px-4 py-6" border>
+                    <Text>
+                        <p>
+                            4.) (Optional) Select your skin:
+                        </p>
+                        <br />
+                        <input type="file" id="skin-input" accept=".png" class="hidden" />
+                        <button id="skin-front" class="bg-teal h-6 inline-block">Click here to select a file...</button>
+                    </Text>
+                </Container>
+                <br />
+                <p>
+                    5.) Generate the resourcepack
+                </p>
+                <br />
+                <Button id="generate-pack">
+                    <Text>
+                        Generate pack
+                    </Text>
+                </Button>
+                <br />
+                <br />
+                <span>Current task: </span><span id="task"></span>
+                <br />
+                <p id="progress">&nbsp;</p>
+            </Text>
+        </Container>
+    </Container>
+</BaseLayout>
+<script>
+    import {proxyfetch} from "../data/proxyfetch.ts";
+    import {generateResourcepack} from "../data/resourcepack/generator.ts";
+
+    interface Version {
+        id: string,
+        type: "release" | "snapshot",
+        url: string,
+    }
+
+    interface VersionJSON {
+        downloads: {
+            client: {
+                url: string;
+            };
+        };
+    }
+
+    interface Manifest {
+        versions: Version[],
+    }
+
+    const selector = document.querySelector("#version-selector") as HTMLSelectElement;
+    const task = document.querySelector("#task") as HTMLSpanElement;
+    const progress = document.querySelector("#progress") as HTMLParagraphElement;
+    const clientJarInput = document.querySelector("#client-jar-input") as HTMLInputElement; 
+    const resourcepackInput = document.querySelector("#resourcepack-input") as HTMLInputElement;
+    const skinInput = document.querySelector("#skin-input") as HTMLInputElement;
+    const generate = document.querySelector("#generate-pack") as HTMLButtonElement;
+
+    function setVersions(versions: Version[]) {
+        selector.innerHTML = "";
+        versions.forEach(version => {
+            const option = document.createElement("option");
+            option.value = version.url;
+            option.innerText = version.id;
+            selector.appendChild(option);
+        });
+    }
+
+    proxyfetch("https://piston-meta.mojang.com/mc/game/version_manifest.json")
+        .then(res => res.json())
+        .then((manifest: Manifest) => {
+            setVersions(manifest.versions
+                .filter(version => version.type !== "snapshot")
+                .filter(version => version.id.startsWith("1.") && parseInt(version.id.split(".")[1]!) >= 17));
+        })
+        .catch(err => {
+            console.error(err);
+        });
+
+    function handleFileSelect(frontElement: HTMLElement, fileSelector: HTMLInputElement) {
+        fileSelector.addEventListener("change", () => {
+            const file = fileSelector.files![0];
+            if (file) {
+                frontElement.innerText = file.name;
+            }
+        });
+        frontElement.addEventListener("click", () => {
+            fileSelector.click();
+        });
+    }
+    
+    document.querySelector("#download-version")!.addEventListener("click", async () => {
+        const url = selector.options[selector.selectedIndex]!.value;
+        const versionJSON = await proxyfetch(url)
+            .then(res => res.json()) as VersionJSON;
+        window.open(versionJSON.downloads.client.url, "_blank")?.focus();
+    });
+
+    handleFileSelect(document.querySelector("#client-jar-front")!, clientJarInput);
+    handleFileSelect(document.querySelector("#resourcepack-front")!, resourcepackInput);
+    handleFileSelect(document.querySelector("#skin-front")!, skinInput);
+
+    function setTask(taskMessage: string) {
+        task.innerText = taskMessage;
+    }
+
+    function setProgress(currProgress: number) {
+        const fontSize = parseInt(
+            window.getComputedStyle(document.body).fontSize,
+        );
+        const availableChars = progress.clientWidth / fontSize;
+        const doneCharCount = Math.round(availableChars * currProgress);
+        progress.innerText = "#".repeat(doneCharCount) + ".".repeat(availableChars - doneCharCount);
+    }
+
+    generate.addEventListener("click", () => {
+        const selectedClientJar = clientJarInput.files![0];
+        const selectedResourcepack = resourcepackInput.files![0];
+        if (!selectedClientJar) {
+            task.innerText = "Please select a client.jar";
+            return;
+        }
+        if (!selectedResourcepack) {
+            task.innerText = "Please select a resourcepack";
+            return;
+        }
+
+        generateResourcepack(selectedClientJar, selectedResourcepack, setTask, setProgress);
+    });
+
+</script>

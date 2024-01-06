@@ -1,0 +1,30 @@
+---
+import { twMerge } from "tailwind-merge";
+interface Props {
+    class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<span class={twMerge("text text-white ", className)}>
+    <slot />
+</span>
+<style>
+    html.color-bleed .text {
+        text-shadow: -0.1em 0.1em green, 0.1em 0 maroon;
+    }
+</style>
+<script>
+
+    function handleBleed() { 
+        const enabled = localStorage.getItem("bleed") === "true";
+        if (enabled && !document.documentElement.classList.contains("color-bleed")) {
+            document.documentElement.classList.add("color-bleed");
+        } else if (!enabled && document.documentElement.classList.contains("color-bleed")) {
+            document.documentElement.classList.remove("color-bleed");
+        }
+    }
+
+    handleBleed();
+    window.addEventListener("accessibilitychange", handleBleed);
+</script>

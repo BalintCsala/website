@@ -1,4 +1,4 @@
-import { JSZipObject } from "jszip";
+import type { JSZipObject } from "jszip";
 
 export type FileRef<T> = {
     name: string,
