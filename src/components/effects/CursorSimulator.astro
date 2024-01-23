@@ -8,6 +8,10 @@
     const cursor = document.querySelector(".cursor")! as HTMLDivElement;
 
     function handleCursor() {
+        if (!localStorage) return;
+        if (!localStorage.getItem("cursor")) {
+            localStorage.setItem("cursor", "true");
+        }
         const enabled = localStorage.getItem("cursor") === "true";
         if (
             enabled &&

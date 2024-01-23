@@ -6,6 +6,7 @@ import BaseLayout from "@layouts/BaseLayout.astro";
 import Text from "@components/Text.astro";
 import ListElement from "@components/ListElement.astro";
 ---
+
 <BaseLayout>
     <Container class="w-full h-full" innerClass="h-full flex flex-col">
         <Container>
@@ -53,8 +54,8 @@ import ListElement from "@components/ListElement.astro";
                     <h2>Navigation:</h2>
                     <ListElement>
                         If you're interested in hiring me or you want to find
-                        out more about my background, you can do so on
-                        the About page.
+                        out more about my background, you can do so on the About
+                        page.
                     </ListElement>
                     <ListElement>
                         If you want to see some of my projects, check out the
@@ -75,7 +76,7 @@ import ListElement from "@components/ListElement.astro";
         const urlParam = window.location.hash;
         if (urlParam) {
             const newUrl = urlParam.replace("#", "");
-            window.location.href = `/${newUrl}`;
+            window.location.href = `${newUrl}`;
         }
     </script>
 </BaseLayout>
