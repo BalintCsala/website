@@ -8,6 +8,40 @@ import Link from "@components/Link.astro";
 ---
 
 <BaseLayout>
+    <style>
+        .timeframe {
+            display: inline-block;
+            width: 11em;
+            margin-right: 1em;
+            background-color: purple;
+        }
+
+        .block {
+            padding-left: 1em;
+            margin-bottom: 1.5em;
+        }
+
+        .contacts {
+            position: relative;
+        }
+
+        .contacts-blocker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: green;
+        }
+    </style>
+    <script>
+        const blocker = document.querySelector(
+            ".contacts-blocker"
+        ) as HTMLDivElement;
+        blocker.addEventListener("click", () => {
+            blocker.parentElement!.removeChild(blocker);
+        });
+    </script>
     <Container class="h-full" innerClass="flex flex-col h-full">
         <Centered>
             <Text>
@@ -22,58 +56,89 @@ import Link from "@components/Link.astro";
                 </h1>
             </Text>
         </Centered>
-        <Container
-            class="grow"
-            innerClass="w-full px-4 py-6"
-            border
-        >
+        <Container class="grow" innerClass="w-full px-4 py-6" border>
             <Text>
                 <p>Education:</p>
-                <ListElement>
-                    Bachelor's degree in Software Engineering
-                </ListElement>
-                <ListElement>
-                    ongoing Master's degree studies (exp. finish: 2024)
-                </ListElement>
-                <br />
+                <div class="block">
+                    <ListElement>
+                        Bachelor's degree in Software Engineering
+                    </ListElement>
+                    <ListElement>
+                        ongoing Master's degree in Software Engineering (exp.
+                        finish: 2024)
+                    </ListElement>
+                </div>
                 <p>Work experience:</p>
-                <ListElement>
-                    Simulation Engineer at EcoSim 2019 - 2023
-                </ListElement>
-                <ListElement>
-                    Senior Software Engineer at EvoSoft (Siemens) 2023 - Present
-                </ListElement>
-                <ListElement>
-                    Teacher's assistant at Budapest University of Technology and
-                    Economics
-                </ListElement>
-                <br />
+                <div class="block">
+                    <ListElement>
+                        <span class="timeframe">2024 -</span>Graphics Enginner
+                        at Gaijin Entertainment
+                    </ListElement>
+                    <ListElement>
+                        <span class="timeframe">2023 - 2024</span>Senior
+                        Software Engineer at EvoSoft (Siemens)
+                    </ListElement>
+                    <ListElement>
+                        <span class="timeframe">2019 - 2023</span>Simulation
+                        Engineer at EcoSim
+                    </ListElement>
+                </div>
                 <p>Technical experience:</p>
-                <ListElement>
-                    Front-end development: JS/TS, most major UI frameworks
-                    (React, Vue, Astro, SolidJS, etc.)
-                </ListElement>
-                <ListElement>
-                    Web tooling: Jenkins, Firebase, Google Cloud Platform
-                </ListElement>
-                <ListElement>
-                    Backend development: NodeJS, SQL, Spring
-                </ListElement>
-                <ListElement>
-                    Native development: C, C++, Rust, Java, Kotlin
-                </ListElement>
-                <ListElement>
-                    App development: Android, Flutter, React Native
-                </ListElement>
-                <ListElement>
-                    Graphics programming: OpenGL, WebGL, Vulkan, WebGPU, GLSL,
-                    WGSL
-                </ListElement>
-                <br />
+                <div class="block">
+                    <ListElement>
+                        Graphics programming: OpenGL, WebGL, Vulkan, WebGPU,
+                        GLSL, WGSL
+                    </ListElement>
+                    <ListElement>
+                        Front-end development: JS/TS, most major UI frameworks
+                        (React, Vue, Astro, SolidJS, etc.)
+                    </ListElement>
+                    <ListElement>
+                        Web tooling: Jenkins, Firebase, Google Cloud Platform
+                    </ListElement>
+                    <ListElement>
+                        Backend development: NodeJS, SQL, Spring
+                    </ListElement>
+                    <ListElement>
+                        Native development: C, C++, Rust, Java, Kotlin
+                    </ListElement>
+                    <ListElement>
+                        App development: Android, Flutter, React Native
+                    </ListElement>
+                </div>
                 <p>Contact:</p>
-                <ListElement>Email: balint.csala@gmail.com</ListElement>
-                <ListElement>Twitter: <Link url="https://twitter.com/BalintCsala">BalintCsala</Link></ListElement>
-                <ListElement>Linkedin: <Link url="https://www.linkedin.com/in/b%C3%A1lint-csala-812b7b269/">Bálint Csala</Link></ListElement>
+                <div class="contacts block">
+                    <div class="contacts-blocker">
+                        <span>
+                            By clicking here you acknowledge that you won't use
+                            my contacts for advertisements or unsolicited unpaid
+                            labour requests. This includes but is not limited
+                            to: work for exposure; revenue share teams; "work
+                            now, pay after we make it" schemes; needing someone
+                            to code because you have the idea for the new
+                            Airbnb, but for horses this time.
+                        </span>
+                    </div>
+                    <ListElement>Email: balint.csala@gmail.com</ListElement>
+                    <ListElement>
+                        Twitter: <Link url="https://twitter.com/BalintCsala">
+                            BalintCsala</Link
+                        >
+                    </ListElement>
+                    <ListElement>
+                        Linkedin: <Link
+                            url="https://www.linkedin.com/in/b%C3%A1lint-csala-812b7b269/"
+                        >
+                            Bálint Csala
+                        </Link>
+                    </ListElement>
+                    <br />
+                    <p>
+                        P.S.: I don't do commissions or contract work. If you
+                        want to change my mind on that, lead with a high 2 digit
+                        hourly rate.
+                    </p>
+                </div>
             </Text>
         </Container>
     </Container>

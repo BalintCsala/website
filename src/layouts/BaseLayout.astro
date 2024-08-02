@@ -29,6 +29,10 @@ const year = new Date().getFullYear();
             document {
                 font-size: 0.6rem;
             }
+
+            html {
+                overflow: hidden;
+            }
         </style>
         <script>
             function onResize() {
@@ -47,7 +51,9 @@ const year = new Date().getFullYear();
     <body
         class="overflow-x-hidden bg-black flex justify-center items-center h-full"
     >
-        <div class="bg-gray w-[50rem] md:w-[80rem] h-[80rem] md:h-[60rem] flex flex-col">
+        <div
+            class="bg-gray w-[50rem] md:w-[80rem] h-[80rem] md:h-[60rem] flex flex-col"
+        >
             <Scanlines />
             <CursorSimulator />
             <Container class="bg-teal text-white px-4 py-6">
